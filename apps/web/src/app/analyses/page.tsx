@@ -66,7 +66,7 @@ export default function AnalysesPage() {
                 <p className="mt-1 flex items-center gap-1 text-xs text-[var(--muted)]">
                   <MapPin size={13} aria-hidden="true" />
                   {
-                    analysis.trial.sites.filter(
+                    (analysis.trial.sites ?? []).filter(
                       (site) => site.country === "United States",
                     ).length
                   }{" "}
@@ -74,12 +74,19 @@ export default function AnalysesPage() {
                 </p>
               </div>
               <p className="text-sm text-[var(--muted)]">
-                {formatDate(analysis.updated_at)}
+                {formatDate(analysis.updated_at!)}
               </p>
               <div className="flex items-center gap-1">
                 <Button asChild variant="ghost">
-                  <Link href={`/analyses/${analysis.id}/edit`}>
-                    Open <ArrowRight size={15} aria-hidden="true" />
+                  <Link
+                    href={
+                      analysis.latest_run?.result
+                        ? `/analyses/${analysis.id!}/results`
+                        : `/analyses/${analysis.id!}/edit`
+                    }
+                  >
+                    {analysis.latest_run?.result ? "Results" : "Protocol"}{" "}
+                    <ArrowRight size={15} aria-hidden="true" />
                   </Link>
                 </Button>
                 <Button
@@ -88,7 +95,7 @@ export default function AnalysesPage() {
                   disabled={remove.isPending}
                   onClick={() => {
                     if (window.confirm(`Delete "${analysis.title}"?`)) {
-                      remove.mutate(analysis.id);
+                      remove.mutate(analysis.id!);
                     }
                   }}
                 >

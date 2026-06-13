@@ -6,12 +6,15 @@ import httpx
 from fastapi import Depends, Header, HTTPException, Request, status
 
 from copilot.clients.clinical_trials import ClinicalTrialsClient
+from copilot.clients.groq import GroqMemoClient
+from copilot.clients.pubmed import PubMedClient
 from copilot.config import Settings, get_settings
 from copilot.persistence.repositories import (
     AnalysisRepository,
     InMemoryAnalysisRepository,
     SupabaseAnalysisRepository,
 )
+from copilot.services.feasibility import FeasibilityService
 
 _memory_repository = InMemoryAnalysisRepository()
 
@@ -78,3 +81,26 @@ def get_trials_client(
         timeout_seconds=settings.upstream_timeout_seconds,
         max_attempts=settings.upstream_max_attempts,
     )
+
+
+def get_feasibility_service(
+    request: Request,
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> FeasibilityService:
+    override = getattr(request.app.state, "feasibility_service", None)
+    if override is not None:
+        return override
+    trials = get_trials_client(request, settings)
+    pubmed = PubMedClient(
+        str(settings.ncbi_base_url),
+        api_key=settings.ncbi_api_key,
+        tool=settings.ncbi_tool,
+        email=settings.ncbi_email,
+        timeout_seconds=settings.upstream_timeout_seconds,
+    )
+    memo = GroqMemoClient(
+        api_key=settings.groq_api_key,
+        model=settings.groq_model,
+        fallback_model=settings.groq_fallback_model,
+    )
+    return FeasibilityService(trials, pubmed, memo)

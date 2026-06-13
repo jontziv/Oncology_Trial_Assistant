@@ -2,7 +2,7 @@
 
 import type { TrialDraft } from "@oncology/api-client";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ExternalLink, Save, ShieldCheck } from "lucide-react";
+import { ExternalLink, Play, Save, ShieldCheck } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,12 +25,14 @@ export function AnalysisForm({
   submitLabel = "Save analysis",
   pending,
   onSubmit,
+  onAnalyze,
 }: {
   trial: TrialDraft;
   analysisTitle?: string;
   submitLabel?: string;
   pending?: boolean;
   onSubmit: (payload: { title: string; trial: TrialDraft }) => Promise<void>;
+  onAnalyze?: (payload: { title: string; trial: TrialDraft }) => Promise<void>;
 }) {
   const {
     register,
@@ -43,6 +45,14 @@ export function AnalysisForm({
 
   async function submit(values: AnalysisFormValues) {
     await onSubmit({
+      title: values.analysisTitle,
+      trial: formToTrial(values, trial),
+    });
+  }
+
+  async function analyze(values: AnalysisFormValues) {
+    if (!onAnalyze) return;
+    await onAnalyze({
       title: values.analysisTitle,
       trial: formToTrial(values, trial),
     });
@@ -129,12 +139,27 @@ export function AnalysisForm({
               {...register("biomarker")}
             />
           </div>
+          <div className="md:col-span-2">
+            <FieldLabel required htmlFor="targetGeographies">
+              Target countries
+            </FieldLabel>
+            <Input
+              id="targetGeographies"
+              placeholder="United States, Canada, Spain"
+              {...register("targetGeographies")}
+            />
+            <FieldError message={errors.targetGeographies?.message} />
+            <p className="mt-1 text-xs text-[var(--muted)]">
+              Comma-separated countries used to prioritize the feasibility
+              ranking.
+            </p>
+          </div>
         </div>
       </section>
 
       <section className="rounded-2xl border border-[var(--line)] bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold">Intervention and enrollment</h2>
-        <div className="mt-5 grid gap-5 md:grid-cols-3">
+        <div className="mt-5 grid gap-5 md:grid-cols-2">
           <div>
             <FieldLabel required htmlFor="interventionName">
               Intervention
@@ -148,6 +173,14 @@ export function AnalysisForm({
             </FieldLabel>
             <Input id="interventionType" {...register("interventionType")} />
             <FieldError message={errors.interventionType?.message} />
+          </div>
+          <div>
+            <FieldLabel htmlFor="moleculeClass">Molecule class</FieldLabel>
+            <Input
+              id="moleculeClass"
+              placeholder="e.g. Checkpoint inhibitor, TKI, ADC"
+              {...register("moleculeClass")}
+            />
           </div>
           <div>
             <FieldLabel required htmlFor="enrollment">
@@ -208,10 +241,22 @@ export function AnalysisForm({
           />
           {isDirty ? "Unsaved edits" : "Source values unchanged"}
         </p>
-        <Button type="submit" disabled={pending}>
-          <Save size={16} aria-hidden="true" />
-          {pending ? "Saving..." : submitLabel}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button type="submit" variant="secondary" disabled={pending}>
+            <Save size={16} aria-hidden="true" />
+            {pending ? "Saving..." : submitLabel}
+          </Button>
+          {onAnalyze ? (
+            <Button
+              type="button"
+              disabled={pending}
+              onClick={handleSubmit(analyze)}
+            >
+              <Play size={16} aria-hidden="true" />
+              {pending ? "Analyzing..." : "Save & run analysis"}
+            </Button>
+          ) : null}
+        </div>
       </div>
     </form>
   );

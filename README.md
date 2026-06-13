@@ -6,18 +6,24 @@ Portfolio-grade decision support for exploring public clinical-trial evidence.
 > clinical decision, regulatory, or site-selection system. Do not enter patient
 > data, protected health information, or confidential protocol content.
 
-## Phase 1
+## Implemented MVP
 
-The current implementation scope is the authenticated trial workspace:
+The current implementation includes:
 
 - Search ClinicalTrials.gov and import a study by NCT ID.
 - Review normalized source fields in an editable analysis form.
 - Save, reopen, update, and delete analyses.
 - Preserve source provenance and distinguish imported values from user edits.
 - Enforce per-user access with Supabase Row Level Security.
-
-Scoring, PubMed, geography, Groq, and memo generation begin only after the
-Phase 1 acceptance gate.
+- Run a versioned, deterministic feasibility analysis.
+- Rank a transparent comparable-trial cohort.
+- Compute eligibility burden, active competition, timeline proxy, endpoint
+  comparability, state/country opportunity, overall risk, confidence, and
+  sensitivity.
+- Retrieve related PubMed records through NCBI E-utilities.
+- Generate evidence-linked protocol recommendations and a deterministic memo.
+- Use Groq only when a production Llama model has been explicitly verified and
+  configured; otherwise show the deterministic memo.
 
 ## Repository
 
@@ -66,3 +72,7 @@ uv run --project apps/api pytest apps/api
 ClinicalTrials.gov records are sponsor-submitted and can be incomplete or out
 of date. The application records retrieval time and source locators so users
 can inspect where imported values originated.
+
+USCS state disease-burden values are intentionally not bundled until a reviewed
+SEER\*Stat export is supplied. The results screen identifies that missing input
+and reduces geography confidence rather than inventing rates.

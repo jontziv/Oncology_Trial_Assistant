@@ -4,7 +4,8 @@ from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
-from copilot.clients.clinical_trials import map_study
+from copilot.clients.clinical_trials import UpstreamUnavailableError, map_study
+from copilot.domain.models import Analysis
 from copilot.main import app
 
 FIXTURE = Path(__file__).parent / "fixtures" / "ctgov_study.json"
@@ -44,9 +45,52 @@ def test_analysis_crud_is_scoped_to_owner() -> None:
     assert updated.status_code == 200
     assert updated.json()["title"] == "Updated NSCLC review"
 
+    updated_trial = _trial_payload()
+    updated_trial["biomarker"] = "PD-L1, EGFR"
+    updated_protocol = client.patch(
+        f"/v1/analyses/{analysis_id}",
+        headers={"X-Demo-User-Id": owner},
+        json={"trial": updated_trial},
+    )
+    assert updated_protocol.status_code == 200
+    assert updated_protocol.json()["trial"]["biomarker"] == "PD-L1, EGFR"
+
     deleted = client.delete(
         f"/v1/analyses/{analysis_id}",
         headers={"X-Demo-User-Id": owner},
     )
     assert deleted.status_code == 204
 
+
+def test_failed_analysis_run_is_persisted() -> None:
+    class FailingFeasibilityService:
+        async def analyze(self, analysis: Analysis) -> None:
+            raise UpstreamUnavailableError("ClinicalTrials.gov unavailable")
+
+    client = TestClient(app)
+    owner = str(uuid4())
+    app.state.feasibility_service = FailingFeasibilityService()
+    try:
+        created = client.post(
+            "/v1/analyses",
+            headers={"X-Demo-User-Id": owner},
+            json={"title": "Failure audit", "trial": _trial_payload()},
+        )
+        analysis_id = created.json()["id"]
+
+        response = client.post(
+            f"/v1/analyses/{analysis_id}/runs",
+            headers={"X-Demo-User-Id": owner},
+            json={"force_refresh": True},
+        )
+        latest = client.get(
+            f"/v1/analyses/{analysis_id}/runs/latest",
+            headers={"X-Demo-User-Id": owner},
+        )
+
+        assert response.status_code == 503
+        assert latest.status_code == 200
+        assert latest.json()["status"] == "failed"
+        assert latest.json()["error_message"] == "ClinicalTrials.gov unavailable"
+    finally:
+        del app.state.feasibility_service

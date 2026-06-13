@@ -75,6 +75,57 @@ export interface paths {
     patch: operations["update_analysis_v1_analyses__analysis_id__patch"];
     trace?: never;
   };
+  "/v1/analyses/{analysis_id}/results": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Results */
+    get: operations["get_results_v1_analyses__analysis_id__results_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/analyses/{analysis_id}/runs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Run Analysis */
+    post: operations["run_analysis_v1_analyses__analysis_id__runs_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/analyses/{analysis_id}/runs/latest": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Latest Run */
+    get: operations["get_latest_run_v1_analyses__analysis_id__runs_latest_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/trials": {
     parameters: {
       query?: never;
@@ -125,6 +176,7 @@ export interface components {
        * Format: uuid
        */
       id?: string;
+      latest_run?: components["schemas"]["AnalysisRun"] | null;
       /**
        * Owner Id
        * Format: uuid
@@ -141,16 +193,109 @@ export interface components {
        */
       updated_at?: string;
     };
+    /** AnalysisRun */
+    AnalysisRun: {
+      /**
+       * Analysis Id
+       * Format: uuid
+       */
+      analysis_id: string;
+      /** Completed At */
+      completed_at?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at?: string;
+      /** Error Message */
+      error_message?: string | null;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id?: string;
+      /**
+       * Methodology Version
+       * @default oncology-feasibility-v0.2
+       */
+      methodology_version: string;
+      /**
+       * Owner Id
+       * Format: uuid
+       */
+      owner_id: string;
+      result?: components["schemas"]["FeasibilityResult"] | null;
+      /** @default running */
+      status: components["schemas"]["RunStatus"];
+    };
     /**
      * AnalysisStatus
      * @enum {string}
      */
-    AnalysisStatus: "draft" | "ready";
+    AnalysisStatus: "draft" | "ready" | "complete";
+    /** CompetitionAnalysis */
+    CompetitionAnalysis: {
+      /** Active Trial Count */
+      active_trial_count: number;
+      /** Active Us Site Count */
+      active_us_site_count: number;
+      /** Confidence */
+      confidence: number;
+      /** Limitation */
+      limitation: string;
+      /** Regions */
+      regions: components["schemas"]["CompetitionRegion"][];
+      /** Score */
+      score: number;
+    };
+    /** CompetitionRegion */
+    CompetitionRegion: {
+      /** Active Site Count */
+      active_site_count: number;
+      /** Active Trial Count */
+      active_trial_count: number;
+      /** Region */
+      region: string;
+      /**
+       * Target Site Count
+       * @default 0
+       */
+      target_site_count: number;
+      /** Weighted Density */
+      weighted_density: number;
+    };
     /** CreateAnalysisRequest */
     CreateAnalysisRequest: {
       /** Title */
       title?: string | null;
       trial: components["schemas"]["TrialDraft"];
+    };
+    /** EligibilityBurden */
+    EligibilityBurden: {
+      band: components["schemas"]["RiskBand"];
+      /** Confidence */
+      confidence: number;
+      /** Criterion Count */
+      criterion_count: number;
+      /** Exclusion Count */
+      exclusion_count: number;
+      /** Factors */
+      factors: components["schemas"]["EligibilityFactor"][];
+      /** Inclusion Count */
+      inclusion_count: number;
+      /** Methodology */
+      methodology: string;
+      /** Score */
+      score: number;
+    };
+    /** EligibilityFactor */
+    EligibilityFactor: {
+      /** Evidence */
+      evidence: string;
+      /** Label */
+      label: string;
+      /** Points */
+      points: number;
     };
     /** Endpoint */
     Endpoint: {
@@ -160,6 +305,121 @@ export interface components {
       measure: string;
       /** Time Frame */
       time_frame?: string | null;
+    };
+    /** EndpointComparability */
+    EndpointComparability: {
+      /** Cohort Distribution */
+      cohort_distribution: {
+        [key: string]: number;
+      };
+      /** Cohort Size */
+      cohort_size: number;
+      /** Comparable Count */
+      comparable_count: number;
+      /** Confidence */
+      confidence: number;
+      /** Rationale */
+      rationale: string;
+      /** Score */
+      score: number;
+      /** Target Family */
+      target_family: string;
+    };
+    /** EvidenceSource */
+    EvidenceSource: {
+      /** Locator */
+      locator?: string | null;
+      /** Record Id */
+      record_id: string;
+      /**
+       * Retrieved At
+       * Format: date-time
+       */
+      retrieved_at: string;
+      /** Source Id */
+      source_id: string;
+      /** Source Type */
+      source_type: string;
+      /** Title */
+      title: string;
+      /** Url */
+      url: string;
+    };
+    /** FeasibilityMemo */
+    FeasibilityMemo: {
+      /** Citation Ids */
+      citation_ids: string[];
+      /** Executive Summary */
+      executive_summary: string;
+      /** Generated By */
+      generated_by: string;
+      /** Key Risks */
+      key_risks: string[];
+      /** Limitations */
+      limitations: string[];
+      /** Recommendations */
+      recommendations: string[];
+    };
+    /** FeasibilityResult */
+    FeasibilityResult: {
+      competition: components["schemas"]["CompetitionAnalysis"];
+      /** Components */
+      components: components["schemas"]["ScoreComponent"][];
+      /** Confidence */
+      confidence: number;
+      /** Confidence Label */
+      confidence_label: string;
+      eligibility: components["schemas"]["EligibilityBurden"];
+      endpoints: components["schemas"]["EndpointComparability"];
+      /**
+       * Generated At
+       * Format: date-time
+       */
+      generated_at?: string;
+      /** Geography */
+      geography: components["schemas"]["GeographyRecommendation"][];
+      memo: components["schemas"]["FeasibilityMemo"];
+      /** Methodology Version */
+      methodology_version: string;
+      /** Overall Score */
+      overall_score: number;
+      /** Publications */
+      publications: components["schemas"]["PublicationEvidence"][];
+      /** Recommendations */
+      recommendations: components["schemas"]["ProtocolRecommendation"][];
+      risk_band: components["schemas"]["RiskBand"];
+      /** Sensitivity High */
+      sensitivity_high: number;
+      /** Sensitivity Low */
+      sensitivity_low: number;
+      /** Similar Trials */
+      similar_trials: components["schemas"]["SimilarTrial"][];
+      /** Sources */
+      sources: components["schemas"]["EvidenceSource"][];
+      timeline: components["schemas"]["TimelineBenchmark"];
+      /** Warnings */
+      warnings?: string[];
+    };
+    /** GeographyRecommendation */
+    GeographyRecommendation: {
+      /** Active Competing Sites */
+      active_competing_sites: number;
+      /** Candidate Facilities */
+      candidate_facilities: string[];
+      /** Confidence */
+      confidence: number;
+      /** Disease Burden Rate */
+      disease_burden_rate?: number | null;
+      /** Historical Trial Count */
+      historical_trial_count: number;
+      /** Level */
+      level: string;
+      /** Opportunity Score */
+      opportunity_score: number;
+      /** Rationale */
+      rationale: string;
+      /** Region */
+      region: string;
     };
     /** HTTPValidationError */
     HTTPValidationError: {
@@ -174,6 +434,106 @@ export interface components {
       intervention_type: string;
       /** Name */
       name: string;
+    };
+    /** ProtocolRecommendation */
+    ProtocolRecommendation: {
+      /** Category */
+      category: string;
+      /** Evidence Ids */
+      evidence_ids: string[];
+      /** Expected Benefit */
+      expected_benefit: string;
+      /** Priority */
+      priority: string;
+      /** Recommendation */
+      recommendation: string;
+      /** Tradeoff */
+      tradeoff: string;
+    };
+    /** PublicationEvidence */
+    PublicationEvidence: {
+      /** Authors */
+      authors?: string[];
+      /** Journal */
+      journal?: string | null;
+      /** Pmid */
+      pmid: string;
+      /** Publication Date */
+      publication_date?: string | null;
+      /** Source Id */
+      source_id: string;
+      /** Title */
+      title: string;
+      /** Url */
+      url: string;
+    };
+    /**
+     * RiskBand
+     * @enum {string}
+     */
+    RiskBand: "low" | "moderate" | "high";
+    /** RunAnalysisRequest */
+    RunAnalysisRequest: {
+      /**
+       * Force Refresh
+       * @default false
+       */
+      force_refresh: boolean;
+    };
+    /**
+     * RunStatus
+     * @enum {string}
+     */
+    RunStatus: "running" | "complete" | "partial" | "failed";
+    /** ScoreComponent */
+    ScoreComponent: {
+      /** Confidence */
+      confidence: number;
+      /** Inputs */
+      inputs?: {
+        [key: string]: string | number | boolean | null;
+      };
+      /** Key */
+      key: string;
+      /** Label */
+      label: string;
+      /** Rationale */
+      rationale: string;
+      /** Score */
+      score: number;
+      /** Weight */
+      weight: number;
+      /** Weighted Contribution */
+      weighted_contribution: number;
+    };
+    /** SimilarTrial */
+    SimilarTrial: {
+      /** Enrollment */
+      enrollment: number;
+      /** Matched Features */
+      matched_features?: string[];
+      /** Mismatched Features */
+      mismatched_features?: string[];
+      /** Nct Id */
+      nct_id: string;
+      /** Overall Status */
+      overall_status: string;
+      /** Phases */
+      phases: string[];
+      /** Primary Completion Date */
+      primary_completion_date?: string | null;
+      /** Similarity Score */
+      similarity_score: number;
+      source: components["schemas"]["SourceReference"];
+      /** Start Date */
+      start_date?: string | null;
+      /** Title */
+      title: string;
+      /**
+       * Us Site Count
+       * @default 0
+       */
+      us_site_count: number;
     };
     /** Site */
     Site: {
@@ -230,6 +590,38 @@ export interface components {
       /** Study Type */
       study_type: string;
     };
+    /** TimelineBenchmark */
+    TimelineBenchmark: {
+      /**
+       * Cohort Size
+       * @default 0
+       */
+      cohort_size: number;
+      /** Confidence */
+      confidence: number;
+      /**
+       * Excluded Count
+       * @default 0
+       */
+      excluded_count: number;
+      /**
+       * Label
+       * @default Start-to-primary-completion timeline proxy
+       */
+      label: string;
+      /** Limitation */
+      limitation: string;
+      /** Median Months */
+      median_months?: number | null;
+      /** Percentile */
+      percentile?: number | null;
+      /** Q1 Months */
+      q1_months?: number | null;
+      /** Q3 Months */
+      q3_months?: number | null;
+      /** Target Months */
+      target_months?: number | null;
+    };
     /** TrialDraft */
     TrialDraft: {
       /** Biomarker */
@@ -252,7 +644,9 @@ export interface components {
       maximum_age?: string | null;
       /** Minimum Age */
       minimum_age?: string | null;
-      /** Nct Id */
+      /** Molecule Class */
+      molecule_class?: string | null;
+      /** Nct Id — NCT\d{8} for ClinicalTrials.gov imports; MANUAL\d{6} for manually entered protocols */
       nct_id: string;
       /** Overall Status */
       overall_status: string;
@@ -260,6 +654,8 @@ export interface components {
       phases: string[];
       /** Primary Completion Date */
       primary_completion_date?: string | null;
+      /** Primary Completion Date Type */
+      primary_completion_date_type?: string | null;
       /** Primary Endpoints */
       primary_endpoints: components["schemas"]["Endpoint"][];
       /** Secondary Endpoints */
@@ -271,9 +667,13 @@ export interface components {
       source: components["schemas"]["SourceReference"];
       /** Start Date */
       start_date?: string | null;
+      /** Start Date Type */
+      start_date_type?: string | null;
       study_design: components["schemas"]["StudyDesign"];
       /** Summary */
       summary?: string | null;
+      /** Target Geographies */
+      target_geographies?: string[];
       /** Title */
       title: string;
     };
@@ -539,6 +939,112 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Analysis"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_results_v1_analyses__analysis_id__results_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+        "x-demo-user-id"?: string | null;
+      };
+      path: {
+        analysis_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FeasibilityResult"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  run_analysis_v1_analyses__analysis_id__runs_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+        "x-demo-user-id"?: string | null;
+      };
+      path: {
+        analysis_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RunAnalysisRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnalysisRun"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_latest_run_v1_analyses__analysis_id__runs_latest_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+        "x-demo-user-id"?: string | null;
+      };
+      path: {
+        analysis_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnalysisRun"];
         };
       };
       /** @description Validation Error */

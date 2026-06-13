@@ -25,6 +25,8 @@ def test_map_study_preserves_source_and_normalizes_fields() -> None:
     assert trial.phases == ["PHASE2"]
     assert trial.enrollment == 80
     assert trial.biomarker == "PD-L1"
+    assert trial.molecule_class == "Checkpoint inhibitor"
+    assert trial.target_geographies == ["United States"]
     assert trial.sites[0].state == "Massachusetts"
     assert trial.source.source_version == "2026-06-12"
 
@@ -39,4 +41,3 @@ async def test_get_study_maps_not_found() -> None:
 
     with pytest.raises(TrialNotFoundError):
         await client.get_study("nct00000000")
-

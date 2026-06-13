@@ -1,5 +1,7 @@
 import type {
   Analysis,
+  AnalysisRun,
+  FeasibilityResult,
   TrialDraft,
   TrialSearchResponse,
 } from "@oncology/api-client";
@@ -77,4 +79,13 @@ export const api = {
     }),
   deleteAnalysis: (id: string) =>
     request<void>(`/v1/analyses/${id}`, { method: "DELETE" }),
+  runAnalysis: (id: string, forceRefresh = false) =>
+    request<AnalysisRun>(`/v1/analyses/${id}/runs`, {
+      method: "POST",
+      body: JSON.stringify({ force_refresh: forceRefresh }),
+    }),
+  getLatestRun: (id: string) =>
+    request<AnalysisRun>(`/v1/analyses/${id}/runs/latest`),
+  getResults: (id: string) =>
+    request<FeasibilityResult>(`/v1/analyses/${id}/results`),
 };

@@ -1,6 +1,6 @@
 begin;
 
-select plan(8);
+select plan(10);
 
 select policies_are(
   'public',
@@ -34,6 +34,22 @@ select table_privs_are(
   'analyses',
   array[]::text[]
 );
+select policies_are(
+  'public',
+  'analysis_runs',
+  array[
+    'analysis_runs_delete_own',
+    'analysis_runs_insert_own',
+    'analysis_runs_select_own',
+    'analysis_runs_update_own'
+  ]
+);
+select table_privs_are(
+  'anon',
+  'public',
+  'analysis_runs',
+  array[]::text[]
+);
 select table_privs_are(
   'authenticated',
   'public',
@@ -43,4 +59,3 @@ select table_privs_are(
 
 select * from finish();
 rollback;
-

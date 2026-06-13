@@ -37,6 +37,31 @@ export default function MethodologyPage() {
           </article>
         ))}
       </div>
+      <div className="mt-6 rounded-3xl border border-[var(--line)] bg-white p-7 shadow-sm">
+        <h2 className="text-xl font-semibold">Illustrative scoring model</h2>
+        <div className="mt-5 grid gap-4 md:grid-cols-5">
+          {[
+            ["Eligibility", "25%"],
+            ["Competition", "25%"],
+            ["Timeline proxy", "20%"],
+            ["Geography", "20%"],
+            ["Endpoints", "10%"],
+          ].map(([label, weight]) => (
+            <div key={label} className="rounded-xl bg-slate-50 p-4">
+              <p className="text-xs text-[var(--muted)]">{label}</p>
+              <p className="mt-2 text-2xl font-semibold">{weight}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-6 text-sm leading-7 text-[var(--muted)]">
+          Comparable trials are ranked with structured indication, biomarker,
+          molecule class, intervention, phase, design, endpoint, geography, and
+          eligibility features. Requested target countries receive a visible
+          preference in country feasibility ranking. Missing data lowers
+          confidence and receives a neutral risk value. Every result includes
+          inputs, weights, sensitivity, sources, and limitations.
+        </p>
+      </div>
     </AppShell>
   );
 }

@@ -23,6 +23,15 @@ class Settings(BaseSettings):
     demo_user_id: str = "00000000-0000-0000-0000-000000000001"
     upstream_timeout_seconds: float = 10.0
     upstream_max_attempts: int = 3
+    ncbi_base_url: AnyHttpUrl = AnyHttpUrl(
+        "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
+    )
+    ncbi_api_key: str = ""
+    ncbi_tool: str = "oncology_trial_feasibility_copilot"
+    ncbi_email: str = ""
+    groq_api_key: str = ""
+    groq_model: str = ""
+    groq_fallback_model: str = ""
 
 
 @lru_cache

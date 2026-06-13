@@ -73,6 +73,30 @@ class ClinicalTrialsClient:
             total_count=payload.get("totalCount"),
         )
 
+    async def search_studies(
+        self,
+        query: str,
+        *,
+        limit: int = 40,
+    ) -> list[TrialDraft]:
+        response = await self._request(
+            "/studies",
+            params={
+                "query.term": query,
+                "pageSize": min(max(limit, 1), 100),
+                "format": "json",
+            },
+        )
+        self._raise_for_upstream(response)
+        retrieved_at = datetime.now(UTC)
+        studies: list[TrialDraft] = []
+        for payload in response.json().get("studies", []):
+            try:
+                studies.append(map_study(payload, retrieved_at=retrieved_at))
+            except (UpstreamUnavailableError, ValueError):
+                continue
+        return studies
+
     async def _request(
         self,
         path: str,
@@ -174,7 +198,16 @@ def map_study(payload: dict[str, Any], *, retrieved_at: datetime) -> TrialDraft:
         conditions=conditions or ["Not reported"],
         phases=phases,
         interventions=interventions,
+        molecule_class=_infer_molecule_class(interventions),
         biomarker=_infer_biomarker(conditions, eligibility.get("eligibilityCriteria")),
+        target_geographies=sorted(
+            {
+                location.country
+                for location in locations
+                if location.country != "Not reported"
+            }
+        )
+        or ["United States"],
         summary=description.get("briefSummary"),
         eligibility_criteria=eligibility.get("eligibilityCriteria") or "Not reported",
         minimum_age=eligibility.get("minimumAge"),
@@ -194,9 +227,13 @@ def map_study(payload: dict[str, Any], *, retrieved_at: datetime) -> TrialDraft:
         enrollment=enrollment,
         enrollment_type=enrollment_info.get("type"),
         start_date=_parse_partial_date((status.get("startDateStruct") or {}).get("date")),
+        start_date_type=(status.get("startDateStruct") or {}).get("type"),
         primary_completion_date=_parse_partial_date(
             (status.get("primaryCompletionDateStruct") or {}).get("date")
         ),
+        primary_completion_date_type=(
+            status.get("primaryCompletionDateStruct") or {}
+        ).get("type"),
         sites=locations,
         source=SourceReference(
             provider="ClinicalTrials.gov",
@@ -288,3 +325,35 @@ def _infer_biomarker(conditions: list[str], eligibility_text: str | None) -> str
         if re.search(rf"(?<![A-Z0-9]){re.escape(marker)}(?![A-Z0-9])", haystack)
     ]
     return ", ".join(matches) if matches else None
+
+
+def _infer_molecule_class(interventions: list[Intervention]) -> str | None:
+    text = " ".join(
+        f"{item.name} {item.intervention_type} {item.description or ''}"
+        for item in interventions
+    ).lower()
+    patterns = [
+        ("Cell therapy", r"\b(car[- ]?t|tcr|cell therapy|cellular therapy)\b"),
+        ("Checkpoint inhibitor", r"\b(pd-?1|pd-?l1|ctla-?4|checkpoint)\b"),
+        (
+            "Tyrosine kinase inhibitor",
+            r"\b(tyrosine kinase inhibitor|\btki\b|inib\b)",
+        ),
+        (
+            "Antibody-drug conjugate",
+            r"\b(antibody[- ]drug conjugate|\badc\b|deruxtecan)\b",
+        ),
+        ("Monoclonal antibody", r"\b(monoclonal antibody|mab\b)"),
+        ("Cancer vaccine", r"\b(vaccine|immunization)\b"),
+        ("Chemotherapy", r"\b(chemotherapy|platinum|taxane|pemetrexed)\b"),
+        ("Radiotherapy", r"\b(radiation|radiotherapy)\b"),
+    ]
+    for label, pattern in patterns:
+        if re.search(pattern, text, re.IGNORECASE):
+            return label
+    types = {
+        item.intervention_type.replace("_", " ").title()
+        for item in interventions
+        if item.intervention_type not in {"OTHER", "NOT_REPORTED"}
+    }
+    return ", ".join(sorted(types)) or None

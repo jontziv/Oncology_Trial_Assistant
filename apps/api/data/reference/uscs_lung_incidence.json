@@ -1,0 +1,10 @@
+{
+  "dataset": "U.S. Cancer Statistics Public Use Database",
+  "release_date": "2026-06-01",
+  "geography": "United States states and territories",
+  "cancer_site": "Lung and bronchus",
+  "source_url": "https://www.cdc.gov/united-states-cancer-statistics/public-use/index.html",
+  "rates_per_100k": {},
+  "limitation": "The official public-use data require a versioned SEER*Stat export. No state rates are bundled until that export is reviewed; geography scores therefore omit disease burden and reduce confidence."
+}
+

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AnalysisForm } from "@/components/analysis-form";
 import { AppShell } from "@/components/app-shell";
@@ -9,6 +10,7 @@ import { api } from "@/lib/api";
 export function EditAnalysis({ id }: { id: string }) {
   const [message, setMessage] = useState("");
   const queryClient = useQueryClient();
+  const router = useRouter();
   const analysis = useQuery({
     queryKey: ["analysis", id],
     queryFn: () => api.getAnalysis(id),
@@ -20,6 +22,18 @@ export function EditAnalysis({ id }: { id: string }) {
       queryClient.setQueryData(["analysis", id], saved);
       queryClient.invalidateQueries({ queryKey: ["analyses"] });
       setMessage("Analysis saved.");
+    },
+    onError: (caught: Error) => setMessage(caught.message),
+  });
+  const analyze = useMutation({
+    mutationFn: async (payload: Parameters<typeof api.updateAnalysis>[1]) => {
+      await api.updateAnalysis(id, payload);
+      return api.runAnalysis(id, true);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["analysis", id] });
+      queryClient.invalidateQueries({ queryKey: ["analyses"] });
+      router.push(`/analyses/${id}/results`);
     },
     onError: (caught: Error) => setMessage(caught.message),
   });
@@ -55,10 +69,14 @@ export function EditAnalysis({ id }: { id: string }) {
             trial={analysis.data.trial}
             analysisTitle={analysis.data.title}
             submitLabel="Save changes"
-            pending={update.isPending}
+            pending={update.isPending || analyze.isPending}
             onSubmit={async (payload) => {
               setMessage("");
               await update.mutateAsync(payload);
+            }}
+            onAnalyze={async (payload) => {
+              setMessage("");
+              await analyze.mutateAsync(payload);
             }}
           />
         </>

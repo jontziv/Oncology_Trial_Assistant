@@ -13,6 +13,16 @@
             "title": "Id",
             "type": "string"
           },
+          "latest_run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalysisRun"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "owner_id": {
             "format": "uuid",
             "title": "Owner Id",
@@ -41,10 +51,157 @@
         "title": "Analysis",
         "type": "object"
       },
+      "AnalysisRun": {
+        "properties": {
+          "analysis_id": {
+            "format": "uuid",
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "methodology_version": {
+            "default": "oncology-feasibility-v0.2",
+            "title": "Methodology Version",
+            "type": "string"
+          },
+          "owner_id": {
+            "format": "uuid",
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FeasibilityResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/RunStatus",
+            "default": "running"
+          }
+        },
+        "required": ["analysis_id", "owner_id"],
+        "title": "AnalysisRun",
+        "type": "object"
+      },
       "AnalysisStatus": {
-        "enum": ["draft", "ready"],
+        "enum": ["draft", "ready", "complete"],
         "title": "AnalysisStatus",
         "type": "string"
+      },
+      "CompetitionAnalysis": {
+        "properties": {
+          "active_trial_count": {
+            "title": "Active Trial Count",
+            "type": "integer"
+          },
+          "active_us_site_count": {
+            "title": "Active Us Site Count",
+            "type": "integer"
+          },
+          "confidence": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "limitation": {
+            "title": "Limitation",
+            "type": "string"
+          },
+          "regions": {
+            "items": {
+              "$ref": "#/components/schemas/CompetitionRegion"
+            },
+            "title": "Regions",
+            "type": "array"
+          },
+          "score": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "score",
+          "active_trial_count",
+          "active_us_site_count",
+          "regions",
+          "confidence",
+          "limitation"
+        ],
+        "title": "CompetitionAnalysis",
+        "type": "object"
+      },
+      "CompetitionRegion": {
+        "properties": {
+          "active_site_count": {
+            "title": "Active Site Count",
+            "type": "integer"
+          },
+          "active_trial_count": {
+            "title": "Active Trial Count",
+            "type": "integer"
+          },
+          "region": {
+            "title": "Region",
+            "type": "string"
+          },
+          "target_site_count": {
+            "default": 0,
+            "title": "Target Site Count",
+            "type": "integer"
+          },
+          "weighted_density": {
+            "title": "Weighted Density",
+            "type": "number"
+          }
+        },
+        "required": [
+          "region",
+          "active_trial_count",
+          "active_site_count",
+          "weighted_density"
+        ],
+        "title": "CompetitionRegion",
+        "type": "object"
       },
       "CreateAnalysisRequest": {
         "properties": {
@@ -66,6 +223,79 @@
         },
         "required": ["trial"],
         "title": "CreateAnalysisRequest",
+        "type": "object"
+      },
+      "EligibilityBurden": {
+        "properties": {
+          "band": {
+            "$ref": "#/components/schemas/RiskBand"
+          },
+          "confidence": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "criterion_count": {
+            "title": "Criterion Count",
+            "type": "integer"
+          },
+          "exclusion_count": {
+            "title": "Exclusion Count",
+            "type": "integer"
+          },
+          "factors": {
+            "items": {
+              "$ref": "#/components/schemas/EligibilityFactor"
+            },
+            "title": "Factors",
+            "type": "array"
+          },
+          "inclusion_count": {
+            "title": "Inclusion Count",
+            "type": "integer"
+          },
+          "methodology": {
+            "title": "Methodology",
+            "type": "string"
+          },
+          "score": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "score",
+          "band",
+          "criterion_count",
+          "inclusion_count",
+          "exclusion_count",
+          "factors",
+          "confidence",
+          "methodology"
+        ],
+        "title": "EligibilityBurden",
+        "type": "object"
+      },
+      "EligibilityFactor": {
+        "properties": {
+          "evidence": {
+            "title": "Evidence",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "points": {
+            "title": "Points",
+            "type": "number"
+          }
+        },
+        "required": ["label", "points", "evidence"],
+        "title": "EligibilityFactor",
         "type": "object"
       },
       "Endpoint": {
@@ -99,6 +329,352 @@
         },
         "required": ["measure"],
         "title": "Endpoint",
+        "type": "object"
+      },
+      "EndpointComparability": {
+        "properties": {
+          "cohort_distribution": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Cohort Distribution",
+            "type": "object"
+          },
+          "cohort_size": {
+            "title": "Cohort Size",
+            "type": "integer"
+          },
+          "comparable_count": {
+            "title": "Comparable Count",
+            "type": "integer"
+          },
+          "confidence": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "rationale": {
+            "title": "Rationale",
+            "type": "string"
+          },
+          "score": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Score",
+            "type": "number"
+          },
+          "target_family": {
+            "title": "Target Family",
+            "type": "string"
+          }
+        },
+        "required": [
+          "score",
+          "target_family",
+          "cohort_distribution",
+          "comparable_count",
+          "cohort_size",
+          "rationale",
+          "confidence"
+        ],
+        "title": "EndpointComparability",
+        "type": "object"
+      },
+      "EvidenceSource": {
+        "properties": {
+          "locator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locator"
+          },
+          "record_id": {
+            "title": "Record Id",
+            "type": "string"
+          },
+          "retrieved_at": {
+            "format": "date-time",
+            "title": "Retrieved At",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_type": {
+            "title": "Source Type",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "source_type",
+          "title",
+          "url",
+          "record_id",
+          "retrieved_at"
+        ],
+        "title": "EvidenceSource",
+        "type": "object"
+      },
+      "FeasibilityMemo": {
+        "properties": {
+          "citation_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Citation Ids",
+            "type": "array"
+          },
+          "executive_summary": {
+            "title": "Executive Summary",
+            "type": "string"
+          },
+          "generated_by": {
+            "title": "Generated By",
+            "type": "string"
+          },
+          "key_risks": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Key Risks",
+            "type": "array"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Limitations",
+            "type": "array"
+          },
+          "recommendations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Recommendations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "generated_by",
+          "executive_summary",
+          "key_risks",
+          "recommendations",
+          "limitations",
+          "citation_ids"
+        ],
+        "title": "FeasibilityMemo",
+        "type": "object"
+      },
+      "FeasibilityResult": {
+        "properties": {
+          "competition": {
+            "$ref": "#/components/schemas/CompetitionAnalysis"
+          },
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/ScoreComponent"
+            },
+            "title": "Components",
+            "type": "array"
+          },
+          "confidence": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "confidence_label": {
+            "title": "Confidence Label",
+            "type": "string"
+          },
+          "eligibility": {
+            "$ref": "#/components/schemas/EligibilityBurden"
+          },
+          "endpoints": {
+            "$ref": "#/components/schemas/EndpointComparability"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "geography": {
+            "items": {
+              "$ref": "#/components/schemas/GeographyRecommendation"
+            },
+            "title": "Geography",
+            "type": "array"
+          },
+          "memo": {
+            "$ref": "#/components/schemas/FeasibilityMemo"
+          },
+          "methodology_version": {
+            "title": "Methodology Version",
+            "type": "string"
+          },
+          "overall_score": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Overall Score",
+            "type": "number"
+          },
+          "publications": {
+            "items": {
+              "$ref": "#/components/schemas/PublicationEvidence"
+            },
+            "title": "Publications",
+            "type": "array"
+          },
+          "recommendations": {
+            "items": {
+              "$ref": "#/components/schemas/ProtocolRecommendation"
+            },
+            "title": "Recommendations",
+            "type": "array"
+          },
+          "risk_band": {
+            "$ref": "#/components/schemas/RiskBand"
+          },
+          "sensitivity_high": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Sensitivity High",
+            "type": "number"
+          },
+          "sensitivity_low": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Sensitivity Low",
+            "type": "number"
+          },
+          "similar_trials": {
+            "items": {
+              "$ref": "#/components/schemas/SimilarTrial"
+            },
+            "title": "Similar Trials",
+            "type": "array"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceSource"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "timeline": {
+            "$ref": "#/components/schemas/TimelineBenchmark"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "methodology_version",
+          "overall_score",
+          "risk_band",
+          "confidence",
+          "confidence_label",
+          "components",
+          "similar_trials",
+          "timeline",
+          "eligibility",
+          "competition",
+          "geography",
+          "endpoints",
+          "recommendations",
+          "publications",
+          "memo",
+          "sources",
+          "sensitivity_low",
+          "sensitivity_high"
+        ],
+        "title": "FeasibilityResult",
+        "type": "object"
+      },
+      "GeographyRecommendation": {
+        "properties": {
+          "active_competing_sites": {
+            "title": "Active Competing Sites",
+            "type": "integer"
+          },
+          "candidate_facilities": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Candidate Facilities",
+            "type": "array"
+          },
+          "confidence": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "disease_burden_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disease Burden Rate"
+          },
+          "historical_trial_count": {
+            "title": "Historical Trial Count",
+            "type": "integer"
+          },
+          "level": {
+            "title": "Level",
+            "type": "string"
+          },
+          "opportunity_score": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Opportunity Score",
+            "type": "number"
+          },
+          "rationale": {
+            "title": "Rationale",
+            "type": "string"
+          },
+          "region": {
+            "title": "Region",
+            "type": "string"
+          }
+        },
+        "required": [
+          "region",
+          "level",
+          "opportunity_score",
+          "historical_trial_count",
+          "active_competing_sites",
+          "candidate_facilities",
+          "rationale",
+          "confidence"
+        ],
+        "title": "GeographyRecommendation",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -138,6 +714,284 @@
         },
         "required": ["name", "intervention_type"],
         "title": "Intervention",
+        "type": "object"
+      },
+      "ProtocolRecommendation": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "expected_benefit": {
+            "title": "Expected Benefit",
+            "type": "string"
+          },
+          "priority": {
+            "title": "Priority",
+            "type": "string"
+          },
+          "recommendation": {
+            "title": "Recommendation",
+            "type": "string"
+          },
+          "tradeoff": {
+            "title": "Tradeoff",
+            "type": "string"
+          }
+        },
+        "required": [
+          "priority",
+          "category",
+          "recommendation",
+          "expected_benefit",
+          "tradeoff",
+          "evidence_ids"
+        ],
+        "title": "ProtocolRecommendation",
+        "type": "object"
+      },
+      "PublicationEvidence": {
+        "properties": {
+          "authors": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Authors",
+            "type": "array"
+          },
+          "journal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Journal"
+          },
+          "pmid": {
+            "title": "Pmid",
+            "type": "string"
+          },
+          "publication_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publication Date"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": ["pmid", "title", "url", "source_id"],
+        "title": "PublicationEvidence",
+        "type": "object"
+      },
+      "RiskBand": {
+        "enum": ["low", "moderate", "high"],
+        "title": "RiskBand",
+        "type": "string"
+      },
+      "RunAnalysisRequest": {
+        "properties": {
+          "force_refresh": {
+            "default": false,
+            "title": "Force Refresh",
+            "type": "boolean"
+          }
+        },
+        "title": "RunAnalysisRequest",
+        "type": "object"
+      },
+      "RunStatus": {
+        "enum": ["running", "complete", "partial", "failed"],
+        "title": "RunStatus",
+        "type": "string"
+      },
+      "ScoreComponent": {
+        "properties": {
+          "confidence": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "inputs": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Inputs",
+            "type": "object"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "rationale": {
+            "title": "Rationale",
+            "type": "string"
+          },
+          "score": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Score",
+            "type": "number"
+          },
+          "weight": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Weight",
+            "type": "number"
+          },
+          "weighted_contribution": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Weighted Contribution",
+            "type": "number"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "score",
+          "weight",
+          "weighted_contribution",
+          "confidence",
+          "rationale"
+        ],
+        "title": "ScoreComponent",
+        "type": "object"
+      },
+      "SimilarTrial": {
+        "properties": {
+          "enrollment": {
+            "title": "Enrollment",
+            "type": "integer"
+          },
+          "matched_features": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Matched Features",
+            "type": "array"
+          },
+          "mismatched_features": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Mismatched Features",
+            "type": "array"
+          },
+          "nct_id": {
+            "title": "Nct Id",
+            "type": "string"
+          },
+          "overall_status": {
+            "title": "Overall Status",
+            "type": "string"
+          },
+          "phases": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Phases",
+            "type": "array"
+          },
+          "primary_completion_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Completion Date"
+          },
+          "similarity_score": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Similarity Score",
+            "type": "number"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceReference"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "us_site_count": {
+            "default": 0,
+            "title": "Us Site Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "nct_id",
+          "title",
+          "similarity_score",
+          "overall_status",
+          "phases",
+          "enrollment",
+          "source"
+        ],
+        "title": "SimilarTrial",
         "type": "object"
       },
       "Site": {
@@ -319,6 +1173,93 @@
         "title": "StudyDesign",
         "type": "object"
       },
+      "TimelineBenchmark": {
+        "properties": {
+          "cohort_size": {
+            "default": 0,
+            "title": "Cohort Size",
+            "type": "integer"
+          },
+          "confidence": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "excluded_count": {
+            "default": 0,
+            "title": "Excluded Count",
+            "type": "integer"
+          },
+          "label": {
+            "default": "Start-to-primary-completion timeline proxy",
+            "title": "Label",
+            "type": "string"
+          },
+          "limitation": {
+            "title": "Limitation",
+            "type": "string"
+          },
+          "median_months": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Months"
+          },
+          "percentile": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentile"
+          },
+          "q1_months": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q1 Months"
+          },
+          "q3_months": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q3 Months"
+          },
+          "target_months": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Months"
+          }
+        },
+        "required": ["confidence", "limitation"],
+        "title": "TimelineBenchmark",
+        "type": "object"
+      },
       "TrialDraft": {
         "properties": {
           "biomarker": {
@@ -407,6 +1348,17 @@
             ],
             "title": "Minimum Age"
           },
+          "molecule_class": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Molecule Class"
+          },
           "nct_id": {
             "pattern": "^NCT\\d{8}$",
             "title": "Nct Id",
@@ -435,6 +1387,17 @@
               }
             ],
             "title": "Primary Completion Date"
+          },
+          "primary_completion_date_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Completion Date Type"
           },
           "primary_endpoints": {
             "items": {
@@ -484,6 +1447,17 @@
             ],
             "title": "Start Date"
           },
+          "start_date_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date Type"
+          },
           "study_design": {
             "$ref": "#/components/schemas/StudyDesign"
           },
@@ -497,6 +1471,13 @@
               }
             ],
             "title": "Summary"
+          },
+          "target_geographies": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Target Geographies",
+            "type": "array"
           },
           "title": {
             "maxLength": 600,
@@ -1094,6 +2075,235 @@
           }
         },
         "summary": "Update Analysis",
+        "tags": ["analyses"]
+      }
+    },
+    "/v1/analyses/{analysis_id}/results": {
+      "get": {
+        "operationId": "get_results_v1_analyses__analysis_id__results_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "analysis_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Analysis Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-demo-user-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Demo-User-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeasibilityResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Results",
+        "tags": ["analyses"]
+      }
+    },
+    "/v1/analyses/{analysis_id}/runs": {
+      "post": {
+        "operationId": "run_analysis_v1_analyses__analysis_id__runs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "analysis_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Analysis Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-demo-user-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Demo-User-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunAnalysisRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisRun"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run Analysis",
+        "tags": ["analyses"]
+      }
+    },
+    "/v1/analyses/{analysis_id}/runs/latest": {
+      "get": {
+        "operationId": "get_latest_run_v1_analyses__analysis_id__runs_latest_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "analysis_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Analysis Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-demo-user-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Demo-User-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisRun"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Latest Run",
         "tags": ["analyses"]
       }
     },
