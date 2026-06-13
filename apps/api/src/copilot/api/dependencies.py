@@ -1,0 +1,80 @@
+from dataclasses import dataclass
+from typing import Annotated
+from uuid import UUID
+
+import httpx
+from fastapi import Depends, Header, HTTPException, Request, status
+
+from copilot.clients.clinical_trials import ClinicalTrialsClient
+from copilot.config import Settings, get_settings
+from copilot.persistence.repositories import (
+    AnalysisRepository,
+    InMemoryAnalysisRepository,
+    SupabaseAnalysisRepository,
+)
+
+_memory_repository = InMemoryAnalysisRepository()
+
+
+@dataclass(frozen=True)
+class CurrentUser:
+    id: UUID
+    access_token: str | None
+
+
+async def get_current_user(
+    settings: Annotated[Settings, Depends(get_settings)],
+    authorization: Annotated[str | None, Header()] = None,
+    x_demo_user_id: Annotated[str | None, Header()] = None,
+) -> CurrentUser:
+    if settings.auth_disabled:
+        return CurrentUser(
+            id=UUID(x_demo_user_id or settings.demo_user_id),
+            access_token=None,
+        )
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing token")
+    access_token = authorization.split(" ", 1)[1]
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        response = await client.get(
+            f"{settings.supabase_url.rstrip('/')}/auth/v1/user",
+            headers={
+                "apikey": settings.supabase_publishable_key,
+                "authorization": f"Bearer {access_token}",
+            },
+        )
+    if response.status_code != 200:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    return CurrentUser(id=UUID(response.json()["id"]), access_token=access_token)
+
+
+def get_analysis_repository(
+    user: Annotated[CurrentUser, Depends(get_current_user)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> AnalysisRepository:
+    if settings.auth_disabled:
+        return _memory_repository
+    if not user.access_token or not settings.supabase_publishable_key:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Persistence is not configured",
+        )
+    return SupabaseAnalysisRepository(
+        settings.supabase_url,
+        settings.supabase_publishable_key,
+        user.access_token,
+    )
+
+
+def get_trials_client(
+    request: Request,
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> ClinicalTrialsClient:
+    override = getattr(request.app.state, "clinical_trials_client", None)
+    if override is not None:
+        return override
+    return ClinicalTrialsClient(
+        str(settings.clinical_trials_base_url),
+        timeout_seconds=settings.upstream_timeout_seconds,
+        max_attempts=settings.upstream_max_attempts,
+    )

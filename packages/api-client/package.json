@@ -1,0 +1,20 @@
+{
+  "name": "@oncology/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "generate": "openapi-typescript openapi.json -o src/schema.ts && prettier --write openapi.json src/schema.ts",
+    "lint": "tsc --noEmit",
+    "test": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3"
+  }
+}

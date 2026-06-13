@@ -1,0 +1,77 @@
+{
+  "protocolSection": {
+    "identificationModule": {
+      "nctId": "NCT04267848",
+      "briefTitle": "Pembrolizumab in Metastatic NSCLC",
+      "officialTitle": "A Phase 2 Study of Pembrolizumab in Metastatic Non-Small Cell Lung Cancer"
+    },
+    "statusModule": {
+      "overallStatus": "RECRUITING",
+      "startDateStruct": { "date": "2024-01-15", "type": "ACTUAL" },
+      "primaryCompletionDateStruct": { "date": "2026-06", "type": "ESTIMATED" }
+    },
+    "descriptionModule": {
+      "briefSummary": "An illustrative study of immunotherapy in metastatic NSCLC."
+    },
+    "conditionsModule": {
+      "conditions": ["Metastatic Non-Small Cell Lung Cancer"]
+    },
+    "designModule": {
+      "studyType": "INTERVENTIONAL",
+      "phases": ["PHASE2"],
+      "designInfo": {
+        "allocation": "NA",
+        "interventionModel": "SINGLE_GROUP",
+        "primaryPurpose": "TREATMENT",
+        "maskingInfo": { "masking": "NONE" }
+      },
+      "enrollmentInfo": { "count": 80, "type": "ESTIMATED" }
+    },
+    "armsInterventionsModule": {
+      "armGroups": [{ "label": "Pembrolizumab", "type": "EXPERIMENTAL" }],
+      "interventions": [
+        {
+          "type": "DRUG",
+          "name": "Pembrolizumab",
+          "description": "Anti-PD-1 monoclonal antibody"
+        }
+      ]
+    },
+    "outcomesModule": {
+      "primaryOutcomes": [
+        {
+          "measure": "Objective Response Rate",
+          "timeFrame": "Up to 24 months"
+        }
+      ],
+      "secondaryOutcomes": [
+        {
+          "measure": "Progression-Free Survival",
+          "timeFrame": "Up to 36 months"
+        }
+      ]
+    },
+    "eligibilityModule": {
+      "eligibilityCriteria": "Inclusion: metastatic NSCLC with PD-L1 expression. Exclusion: untreated CNS metastases.",
+      "healthyVolunteers": false,
+      "sex": "ALL",
+      "minimumAge": "18 Years"
+    },
+    "contactsLocationsModule": {
+      "locations": [
+        {
+          "facility": "Example Cancer Center",
+          "status": "RECRUITING",
+          "city": "Boston",
+          "state": "Massachusetts",
+          "country": "United States",
+          "geoPoint": { "lat": 42.36, "lon": -71.06 }
+        }
+      ]
+    }
+  },
+  "derivedSection": {
+    "miscInfoModule": { "versionHolder": "2026-06-12" }
+  },
+  "hasResults": false
+}
