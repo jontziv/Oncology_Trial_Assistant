@@ -12,6 +12,8 @@ from copilot.clients.clinical_trials import TrialNotFoundError, UpstreamUnavaila
 from copilot.config import get_settings
 
 settings = get_settings()
+production_web_origin = "https://oncology-trial-assistant-web.vercel.app"
+allowed_origins = sorted({*settings.app_cors_origins, production_web_origin})
 
 app = FastAPI(
     title="Oncology Trial Feasibility Copilot API",
@@ -23,7 +25,7 @@ app = FastAPI(
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.app_cors_origins,
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=[

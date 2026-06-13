@@ -16,13 +16,14 @@ a Web Service with root directory `apps/api` and these commands:
 
 ```text
 Build: uv sync --frozen --no-dev --active
-Start: uv run --active uvicorn copilot.main:app --app-dir src --host 0.0.0.0 --port $PORT
+Start: python -m uvicorn copilot.main:app --app-dir src --host 0.0.0.0 --port 10000
 Health check: /health/ready
 ```
 
 The `--active` flag tells uv to install into Render's active environment
 (`/opt/render/project/src/.venv`) and prevents the virtual-environment mismatch
-warning.
+warning. The start command then uses that environment's Python directly and
+binds the service to Render's conventional web-service port.
 
 Configure:
 

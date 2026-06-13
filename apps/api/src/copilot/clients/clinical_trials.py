@@ -28,6 +28,11 @@ class TrialNotFoundError(RuntimeError):
 
 
 class ClinicalTrialsClient:
+    REQUEST_HEADERS = {
+        "Accept": "application/json",
+        "User-Agent": "OncologyTrialFeasibilityCopilot/0.1",
+    }
+
     def __init__(
         self,
         base_url: str,
@@ -108,7 +113,11 @@ class ClinicalTrialsClient:
         try:
             for attempt in range(self._max_attempts):
                 try:
-                    response = await client.get(f"{self._base_url}{path}", params=params)
+                    response = await client.get(
+                        f"{self._base_url}{path}",
+                        params=params,
+                        headers=self.REQUEST_HEADERS,
+                    )
                 except (httpx.TimeoutException, httpx.NetworkError) as exc:
                     if attempt + 1 == self._max_attempts:
                         raise UpstreamUnavailableError("ClinicalTrials.gov unavailable") from exc
