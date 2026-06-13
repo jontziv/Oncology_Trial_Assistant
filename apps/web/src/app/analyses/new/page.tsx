@@ -8,7 +8,7 @@ import { useState } from "react";
 import { AnalysisForm } from "@/components/analysis-form";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
-import { FieldError, FieldLabel, Input, Textarea } from "@/components/ui/field";
+import { FieldLabel, Input, Textarea } from "@/components/ui/field";
 import { api } from "@/lib/api";
 import { createBlankTrialDraft } from "@/lib/analysis-form";
 
@@ -264,8 +264,8 @@ export default function NewAnalysisPage() {
               <section className="rounded-2xl border border-[var(--line)] bg-white p-6 shadow-sm">
                 <h2 className="text-xl font-semibold">Find a study</h2>
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                  Try an NCT ID, "metastatic NSCLC phase 2," or a biomarker and
-                  intervention.
+                  Try an NCT ID, &quot;metastatic NSCLC phase 2,&quot; or a
+                  biomarker and intervention.
                 </p>
                 <form
                   className="mt-6"

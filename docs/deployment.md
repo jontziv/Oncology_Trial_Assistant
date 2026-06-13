@@ -9,9 +9,22 @@
 4. Copy the project URL and publishable key. Never expose the service-role key
    to the browser.
 
-## FastAPI on Vercel
+## FastAPI on Render
 
-Deploy `apps/api` as the Python project and configure:
+Create a Render Blueprint from the repository-level `render.yaml`, or configure
+a Web Service with root directory `apps/api` and these commands:
+
+```text
+Build: uv sync --frozen --no-dev --active
+Start: uv run --active uvicorn copilot.main:app --app-dir src --host 0.0.0.0 --port $PORT
+Health check: /health/ready
+```
+
+The `--active` flag tells uv to install into Render's active environment
+(`/opt/render/project/src/.venv`) and prevents the virtual-environment mismatch
+warning.
+
+Configure:
 
 ```text
 APP_ENV=production
@@ -35,11 +48,24 @@ remains authoritative.
 Set the root directory to `apps/web` and configure:
 
 ```text
-NEXT_PUBLIC_API_URL=https://your-api-project.vercel.app
+NEXT_PUBLIC_API_URL=https://your-api-service.onrender.com
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 NEXT_PUBLIC_DEMO_MODE=false
 ```
+
+`NEXT_PUBLIC_API_URL` is embedded during the Next.js build. After adding or
+changing it, redeploy the Vercel project. If it is absent, the app now reports
+an explicit API configuration error instead of attempting a localhost request.
+
+Verify the API before redeploying the web app:
+
+```text
+https://your-api-service.onrender.com/health/ready
+```
+
+It must return `{"status":"ready"}`. Also include every deployed Vercel origin,
+including a custom production domain if used, in `APP_CORS_ORIGINS`.
 
 Use Hobby only for this non-commercial portfolio demonstration. Monitor
 function duration, database size, and egress before inviting broader traffic.

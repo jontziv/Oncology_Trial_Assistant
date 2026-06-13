@@ -7,7 +7,10 @@ import type {
 } from "@oncology/api-client";
 import { getSupabaseBrowserClient, isDemoMode } from "@/lib/supabase";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
+const API_URL =
+  configuredApiUrl ??
+  (process.env.NODE_ENV === "development" ? "http://localhost:8000" : "");
 const DEMO_USER_ID = "00000000-0000-0000-0000-000000000001";
 
 export class ApiError extends Error {
@@ -21,6 +24,14 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  if (!API_URL) {
+    throw new ApiError(
+      "The API is not configured. Set NEXT_PUBLIC_API_URL in Vercel and redeploy.",
+      0,
+      "API_NOT_CONFIGURED",
+    );
+  }
+
   const headers = new Headers(init?.headers);
   headers.set("Content-Type", "application/json");
 
@@ -35,10 +46,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     }
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...init,
+      headers,
+    });
+  } catch {
+    throw new ApiError(
+      `Cannot reach the API at ${API_URL}. Check the Render service, HTTPS URL, and APP_CORS_ORIGINS.`,
+      0,
+      "API_UNREACHABLE",
+    );
+  }
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
     const error = payload?.error;
