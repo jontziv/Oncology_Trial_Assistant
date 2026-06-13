@@ -56,15 +56,16 @@ NCT-record GET paths and still retrieves data from the official API.
 Set the root directory to `apps/web` and configure:
 
 ```text
-NEXT_PUBLIC_API_URL=https://your-api-service.onrender.com
+API_SERVER_URL=https://oncology-trial-assistant.onrender.com
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 NEXT_PUBLIC_DEMO_MODE=false
 ```
 
-`NEXT_PUBLIC_API_URL` is embedded during the Next.js build. After adding or
-changing it, redeploy the Vercel project. If it is absent, the app now reports
-an explicit API configuration error instead of attempting a localhost request.
+Production browser requests always use the same-origin `/api/backend` route.
+That Vercel route forwards to `API_SERVER_URL` server-to-server, eliminating
+browser CORS and stale public API URL problems. Remove `NEXT_PUBLIC_API_URL`
+from the Vercel project; it is used only for local development.
 
 Verify the API before redeploying the web app:
 
@@ -72,8 +73,7 @@ Verify the API before redeploying the web app:
 https://your-api-service.onrender.com/health/ready
 ```
 
-It must return `{"status":"ready"}`. Also include every deployed Vercel origin,
-including a custom production domain if used, in `APP_CORS_ORIGINS`.
+It must return `{"status":"ready"}`.
 
 Use Hobby only for this non-commercial portfolio demonstration. Monitor
 function duration, database size, and egress before inviting broader traffic.
