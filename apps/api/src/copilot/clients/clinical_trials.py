@@ -37,11 +37,15 @@ class ClinicalTrialsClient:
         self,
         base_url: str,
         *,
+        fallback_base_url: str | None = None,
         timeout_seconds: float = 10.0,
         max_attempts: int = 3,
         client: httpx.AsyncClient | None = None,
     ) -> None:
         self._base_url = base_url.rstrip("/")
+        self._fallback_base_url = (
+            fallback_base_url.rstrip("/") if fallback_base_url else None
+        )
         self._timeout = timeout_seconds
         self._max_attempts = max_attempts
         self._client = client
@@ -111,24 +115,46 @@ class ClinicalTrialsClient:
         owns_client = self._client is None
         client = self._client or httpx.AsyncClient(timeout=self._timeout)
         try:
-            for attempt in range(self._max_attempts):
-                try:
-                    response = await client.get(
-                        f"{self._base_url}{path}",
-                        params=params,
-                        headers=self.REQUEST_HEADERS,
-                    )
-                except (httpx.TimeoutException, httpx.NetworkError) as exc:
-                    if attempt + 1 == self._max_attempts:
-                        raise UpstreamUnavailableError("ClinicalTrials.gov unavailable") from exc
-                    await asyncio.sleep(0.25 * (2**attempt))
-                    continue
-                if response.status_code not in {429, 500, 502, 503, 504}:
-                    return response
-                if attempt + 1 < self._max_attempts:
-                    retry_after = response.headers.get("retry-after")
-                    delay = float(retry_after) if retry_after else 0.25 * (2**attempt)
-                    await asyncio.sleep(min(delay, 2.0))
+            base_urls = [
+                self._base_url,
+                *(
+                    [self._fallback_base_url]
+                    if self._fallback_base_url
+                    and self._fallback_base_url != self._base_url
+                    else []
+                ),
+            ]
+            for base_url in base_urls:
+                for attempt in range(self._max_attempts):
+                    try:
+                        response = await client.get(
+                            f"{base_url}{path}",
+                            params=params,
+                            headers=self.REQUEST_HEADERS,
+                        )
+                    except (httpx.TimeoutException, httpx.NetworkError) as exc:
+                        if attempt + 1 == self._max_attempts:
+                            if base_url == base_urls[-1]:
+                                raise UpstreamUnavailableError(
+                                    "ClinicalTrials.gov unavailable"
+                                ) from exc
+                            break
+                        await asyncio.sleep(0.25 * (2**attempt))
+                        continue
+                    if response.status_code == 403 and base_url != base_urls[-1]:
+                        break
+                    if response.status_code not in {429, 500, 502, 503, 504}:
+                        return response
+                    if attempt + 1 < self._max_attempts:
+                        retry_after = response.headers.get("retry-after")
+                        delay = (
+                            float(retry_after)
+                            if retry_after
+                            else 0.25 * (2**attempt)
+                        )
+                        await asyncio.sleep(min(delay, 2.0))
+                    elif base_url == base_urls[-1]:
+                        return response
             raise UpstreamUnavailableError("ClinicalTrials.gov unavailable")
         finally:
             if owns_client:

@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     clinical_trials_base_url: AnyHttpUrl = AnyHttpUrl(
         "https://clinicaltrials.gov/api/v2"
     )
+    clinical_trials_fallback_base_url: AnyHttpUrl | None = AnyHttpUrl(
+        "https://oncology-trial-assistant-web.vercel.app/api/clinical-trials"
+    )
     supabase_url: str = "http://127.0.0.1:54321"
     supabase_publishable_key: str = ""
     supabase_service_role_key: str = ""

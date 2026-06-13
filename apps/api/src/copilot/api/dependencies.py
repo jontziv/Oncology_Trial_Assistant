@@ -78,6 +78,11 @@ def get_trials_client(
         return override
     return ClinicalTrialsClient(
         str(settings.clinical_trials_base_url),
+        fallback_base_url=(
+            str(settings.clinical_trials_fallback_base_url)
+            if settings.clinical_trials_fallback_base_url
+            else None
+        ),
         timeout_seconds=settings.upstream_timeout_seconds,
         max_attempts=settings.upstream_max_attempts,
     )

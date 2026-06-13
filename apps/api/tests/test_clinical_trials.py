@@ -45,3 +45,26 @@ async def test_get_study_maps_not_found() -> None:
     request = route.calls[0].request
     assert request.headers["accept"] == "application/json"
     assert request.headers["user-agent"] == "OncologyTrialFeasibilityCopilot/0.1"
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_get_study_uses_fallback_after_forbidden_response() -> None:
+    payload = json.loads(FIXTURE.read_text())
+    direct = respx.get(
+        "https://clinicaltrials.example/studies/NCT04267848"
+    ).mock(return_value=httpx.Response(403))
+    fallback = respx.get(
+        "https://relay.example/studies/NCT04267848"
+    ).mock(return_value=httpx.Response(200, json=payload))
+    client = ClinicalTrialsClient(
+        "https://clinicaltrials.example",
+        fallback_base_url="https://relay.example",
+        max_attempts=1,
+    )
+
+    trial = await client.get_study("NCT04267848")
+
+    assert trial.nct_id == "NCT04267848"
+    assert direct.called
+    assert fallback.called
