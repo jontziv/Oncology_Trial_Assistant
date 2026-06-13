@@ -30,6 +30,7 @@ Configure:
 ```text
 APP_ENV=production
 APP_CORS_ORIGINS=["https://your-web-project.vercel.app"]
+CLINICAL_TRIALS_BASE_URL=https://your-web-project.vercel.app/api/clinical-trials
 AUTH_DISABLED=false
 SUPABASE_URL=...
 SUPABASE_PUBLISHABLE_KEY=...
@@ -43,6 +44,11 @@ GROQ_FALLBACK_MODEL=<second account-verified production Llama model>
 
 The API uses the caller's Supabase access token for PostgREST requests so RLS
 remains authoritative.
+
+The production ClinicalTrials.gov base URL points to the narrowly scoped
+Next.js relay because ClinicalTrials.gov may reject Render's shared outbound
+network with HTTP 403. The relay accepts only study search and NCT-record GET
+paths and still retrieves data from the official API.
 
 ## Next.js on Vercel
 

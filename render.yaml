@@ -15,6 +15,8 @@ services:
         value: "false"
       - key: APP_CORS_ORIGINS
         value: '["https://oncology-trial-assistant-web.vercel.app"]'
+      - key: CLINICAL_TRIALS_BASE_URL
+        value: https://oncology-trial-assistant-web.vercel.app/api/clinical-trials
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_PUBLISHABLE_KEY
