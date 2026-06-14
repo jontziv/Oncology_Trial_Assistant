@@ -97,6 +97,13 @@ def test_uscs_reference_data_is_indication_specific() -> None:
     assert "omitted" in unmatched.limitation
 
 
+def test_uscs_reference_data_matches_lung_carcinoma_wording() -> None:
+    burden = load_disease_burden("Lung Non-Small Cell Carcinoma")
+
+    assert burden.cancer_site == "Lung & Bronchus"
+    assert burden.rates_per_100k
+
+
 def test_requested_non_us_country_is_ranked_without_history() -> None:
     target = _trial().model_copy(
         update={"target_geographies": ["Germany"], "sites": []},
