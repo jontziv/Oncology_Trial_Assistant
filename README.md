@@ -1,6 +1,6 @@
 # Oncology Trial Feasibility & Enrollment Risk Copilot
 
-Portfolio-grade decision support for exploring public clinical-trial evidence.
+Decision support solution for exploring public clinical-trial evidence.
 
 > Illustrative methodology only. This application is not a validated prediction,
 > clinical decision, regulatory, or site-selection system. Do not enter patient
