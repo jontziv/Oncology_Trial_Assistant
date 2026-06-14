@@ -37,6 +37,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const accessToken = session?.data.session?.access_token;
     if (accessToken) {
       headers.set("Authorization", `Bearer ${accessToken}`);
+    } else {
+      throw new ApiError(
+        "Your session is missing. Sign in before saving an analysis.",
+        401,
+        "AUTH_REQUIRED",
+      );
     }
   }
 

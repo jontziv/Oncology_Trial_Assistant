@@ -23,6 +23,7 @@ _memory_repository = InMemoryAnalysisRepository()
 class CurrentUser:
     id: UUID
     access_token: str | None
+    is_demo: bool = False
 
 
 async def get_current_user(
@@ -34,6 +35,16 @@ async def get_current_user(
         return CurrentUser(
             id=UUID(x_demo_user_id or settings.demo_user_id),
             access_token=None,
+            is_demo=True,
+        )
+    if (
+        settings.demo_access_enabled
+        and x_demo_user_id == settings.demo_user_id
+    ):
+        return CurrentUser(
+            id=UUID(settings.demo_user_id),
+            access_token=None,
+            is_demo=True,
         )
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing token")
@@ -55,7 +66,7 @@ def get_analysis_repository(
     user: Annotated[CurrentUser, Depends(get_current_user)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> AnalysisRepository:
-    if settings.auth_disabled:
+    if user.is_demo:
         return _memory_repository
     if not user.access_token or not settings.supabase_publishable_key:
         raise HTTPException(

@@ -1,14 +1,19 @@
 import json
 from pathlib import Path
-from uuid import uuid4
+from uuid import UUID, uuid4
 
+import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
+from copilot.api.dependencies import get_current_user
 from copilot.clients.clinical_trials import UpstreamUnavailableError, map_study
+from copilot.config import Settings
 from copilot.domain.models import Analysis
 from copilot.main import app
 
 FIXTURE = Path(__file__).parent / "fixtures" / "ctgov_study.json"
+DEMO_USER_ID = "00000000-0000-0000-0000-000000000001"
 
 
 def _trial_payload() -> dict[str, object]:
@@ -60,6 +65,41 @@ def test_analysis_crud_is_scoped_to_owner() -> None:
         headers={"X-Demo-User-Id": owner},
     )
     assert deleted.status_code == 204
+
+
+async def test_explicit_demo_access_works_while_auth_remains_enabled() -> None:
+    settings = Settings(
+        auth_disabled=False,
+        demo_access_enabled=True,
+        demo_user_id=DEMO_USER_ID,
+    )
+
+    user = await get_current_user(
+        settings=settings,
+        authorization=None,
+        x_demo_user_id=DEMO_USER_ID,
+    )
+
+    assert user.id == UUID(DEMO_USER_ID)
+    assert user.is_demo is True
+    assert user.access_token is None
+
+
+async def test_demo_access_rejects_an_unconfigured_identity() -> None:
+    settings = Settings(
+        auth_disabled=False,
+        demo_access_enabled=True,
+        demo_user_id=DEMO_USER_ID,
+    )
+
+    with pytest.raises(HTTPException) as caught:
+        await get_current_user(
+            settings=settings,
+            authorization=None,
+            x_demo_user_id=str(uuid4()),
+        )
+
+    assert caught.value.status_code == 401
 
 
 def test_failed_analysis_run_is_persisted() -> None:

@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     supabase_publishable_key: str = ""
     supabase_service_role_key: str = ""
     auth_disabled: bool = True
+    demo_access_enabled: bool = False
     demo_user_id: str = "00000000-0000-0000-0000-000000000001"
     upstream_timeout_seconds: float = 10.0
     upstream_max_attempts: int = 3
