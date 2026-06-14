@@ -27,8 +27,32 @@ def test_map_study_preserves_source_and_normalizes_fields() -> None:
     assert trial.biomarker == "PD-L1"
     assert trial.molecule_class == "Checkpoint inhibitor"
     assert trial.target_geographies == ["United States"]
+    assert trial.has_results is False
+    assert trial.results_primary_endpoints == []
     assert trial.sites[0].state == "Massachusetts"
     assert trial.source.source_version == "2026-06-12"
+
+
+def test_map_study_includes_posted_primary_results() -> None:
+    payload = json.loads(FIXTURE.read_text())
+    payload["hasResults"] = True
+    payload["resultsSection"] = {
+        "outcomeMeasuresModule": {
+            "outcomeMeasures": [
+                {
+                    "type": "PRIMARY",
+                    "title": "Overall Survival",
+                    "timeFrame": "Up to 36 months",
+                    "description": "Time from randomization to death.",
+                }
+            ]
+        }
+    }
+
+    trial = map_study(payload, retrieved_at=datetime(2026, 6, 13, tzinfo=UTC))
+
+    assert trial.has_results is True
+    assert trial.results_primary_endpoints[0].measure == "Overall Survival"
 
 
 @pytest.mark.asyncio

@@ -21,7 +21,7 @@ export default function MethodologyPage() {
           ],
           [
             "2. Compute",
-            "Future risk factors will be deterministic, versioned, decomposed, and explicit about missing-data behavior.",
+            "Risk factors are deterministic, versioned, decomposed, and explicit about missing-data behavior.",
           ],
           [
             "3. Synthesize",
@@ -43,7 +43,7 @@ export default function MethodologyPage() {
           {[
             ["Eligibility", "25%"],
             ["Competition", "25%"],
-            ["Timeline proxy", "20%"],
+            ["Enrollment duration", "20%"],
             ["Geography", "20%"],
             ["Endpoints", "10%"],
           ].map(([label, weight]) => (
@@ -57,9 +57,12 @@ export default function MethodologyPage() {
           Comparable trials are ranked with structured indication, biomarker,
           molecule class, intervention, phase, design, endpoint, geography, and
           eligibility features. Requested target countries receive a visible
-          preference in country feasibility ranking. Missing data lowers
-          confidence and receives a neutral risk value. Every result includes
-          inputs, weights, sensitivity, sources, and limitations.
+          preference in country feasibility ranking. US state opportunity also
+          uses indication-matched 2018–2022 NPCR/SEER incidence context. Posted
+          trial-result endpoints are preferred over planned endpoints when
+          available. Missing data lowers confidence and receives a neutral risk
+          value. Every result includes inputs, weights, sensitivity, sources,
+          and limitations.
         </p>
       </div>
     </AppShell>

@@ -1,8 +1,18 @@
 "use client";
 
-import type { TrialDraft, TrialSearchResult } from "@oncology/api-client";
+import type {
+  ProtocolParseResult,
+  TrialDraft,
+  TrialSearchResult,
+} from "@oncology/api-client";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowRight, ClipboardList, Search } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  ClipboardList,
+  FileText,
+  Search,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AnalysisForm } from "@/components/analysis-form";
@@ -12,7 +22,70 @@ import { FieldLabel, Input, Textarea } from "@/components/ui/field";
 import { api } from "@/lib/api";
 import { createBlankTrialDraft } from "@/lib/analysis-form";
 
-type Mode = "import" | "manual";
+type Mode = "import" | "parse" | "manual";
+
+function ProtocolParserForm({
+  onReady,
+}: {
+  onReady: (result: ProtocolParseResult) => void;
+}) {
+  const [text, setText] = useState("");
+  const parse = useMutation({
+    mutationFn: () => api.parseProtocol(text),
+    onSuccess: onReady,
+  });
+
+  return (
+    <form
+      className="space-y-6"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (text.trim().length >= 50) parse.mutate();
+      }}
+    >
+      <section className="rounded-2xl border border-[var(--line)] bg-white p-6 shadow-sm">
+        <h2 className="text-xl font-semibold">Paste protocol text</h2>
+        <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+          Paste a synopsis or relevant protocol sections. The parser extracts
+          the decision inputs locally in the application API and flags anything
+          that still needs confirmation.
+        </p>
+        <div className="mt-6">
+          <FieldLabel required htmlFor="protocol-text">
+            Protocol synopsis or sections
+          </FieldLabel>
+          <Textarea
+            id="protocol-text"
+            rows={20}
+            minLength={50}
+            required
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            placeholder={
+              "Protocol title: ...\nIndication: ...\nPhase: ...\n" +
+              "Primary endpoint: ...\n\nInclusion criteria:\n...\n\n" +
+              "Exclusion criteria:\n..."
+            }
+          />
+        </div>
+        {parse.isError ? (
+          <p
+            role="alert"
+            className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-800"
+          >
+            {parse.error.message}
+          </p>
+        ) : null}
+      </section>
+      <div className="flex justify-end">
+        <Button type="submit" disabled={parse.isPending}>
+          <FileText size={16} aria-hidden="true" />
+          {parse.isPending ? "Parsing protocol..." : "Parse and review"}
+        </Button>
+      </div>
+    </form>
+  );
+}
 
 function ManualEntryForm({
   onReady,
@@ -179,6 +252,8 @@ export default function NewAnalysisPage() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<TrialSearchResult[]>([]);
   const [trial, setTrial] = useState<TrialDraft | null>(null);
+  const [parseWarnings, setParseWarnings] = useState<string[]>([]);
+  const [parsedFields, setParsedFields] = useState<string[]>([]);
   const [error, setError] = useState("");
   const router = useRouter();
 
@@ -221,6 +296,7 @@ export default function NewAnalysisPage() {
 
   const tabs: { id: Mode; label: string; icon: React.ElementType }[] = [
     { id: "import", label: "Import from ClinicalTrials.gov", icon: Search },
+    { id: "parse", label: "Parse protocol text", icon: FileText },
     { id: "manual", label: "Enter protocol manually", icon: ClipboardList },
   ];
 
@@ -232,7 +308,9 @@ export default function NewAnalysisPage() {
           ? "Confirm the values and make any protocol-specific edits before saving."
           : mode === "import"
             ? "Find a public study by NCT ID or search terms. Nothing is saved until you review the imported fields."
-            : "Describe your protocol directly. All fields are editable on the next screen."
+            : mode === "parse"
+              ? "Extract decision inputs from pasted protocol text, then confirm every field before saving."
+              : "Describe your protocol directly. All fields are editable on the next screen."
       }
     >
       {!trial ? (
@@ -350,6 +428,14 @@ export default function NewAnalysisPage() {
                 )}
               </section>
             </div>
+          ) : mode === "parse" ? (
+            <ProtocolParserForm
+              onReady={(result) => {
+                setTrial(result.trial);
+                setParseWarnings(result.warnings);
+                setParsedFields(result.extracted_fields);
+              }}
+            />
           ) : (
             <ManualEntryForm onReady={(t) => setTrial(t)} />
           )}
@@ -363,6 +449,28 @@ export default function NewAnalysisPage() {
             >
               {error}
             </p>
+          ) : null}
+          {parsedFields.length ? (
+            <div className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
+              Extracted for review:{" "}
+              {parsedFields
+                .map((field) => field.replaceAll("_", " "))
+                .join(", ")}
+              .
+            </div>
+          ) : null}
+          {parseWarnings.length ? (
+            <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+              <p className="flex items-center gap-2 font-semibold">
+                <AlertTriangle size={16} aria-hidden="true" />
+                Confirm these parser assumptions
+              </p>
+              <ul className="mt-2 space-y-1">
+                {parseWarnings.map((warning) => (
+                  <li key={warning}>• {warning}</li>
+                ))}
+              </ul>
+            </div>
           ) : null}
           <AnalysisForm
             trial={trial}

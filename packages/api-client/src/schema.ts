@@ -126,6 +126,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/protocols/parse": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Parse Protocol Text */
+    post: operations["parse_protocol_text_v1_protocols_parse_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/trials": {
     parameters: {
       query?: never;
@@ -216,7 +233,7 @@ export interface components {
       id?: string;
       /**
        * Methodology Version
-       * @default oncology-feasibility-v0.2
+       * @default oncology-feasibility-v0.3
        */
       methodology_version: string;
       /**
@@ -435,6 +452,21 @@ export interface components {
       /** Name */
       name: string;
     };
+    /** ParseProtocolRequest */
+    ParseProtocolRequest: {
+      /** Text */
+      text: string;
+    };
+    /** ProtocolParseResult */
+    ProtocolParseResult: {
+      /** Extracted Fields */
+      extracted_fields: string[];
+      /** Parser Version */
+      parser_version: string;
+      trial: components["schemas"]["TrialDraft"];
+      /** Warnings */
+      warnings: string[];
+    };
     /** ProtocolRecommendation */
     ProtocolRecommendation: {
       /** Category */
@@ -510,6 +542,11 @@ export interface components {
     SimilarTrial: {
       /** Enrollment */
       enrollment: number;
+      /**
+       * Has Results
+       * @default false
+       */
+      has_results: boolean;
       /** Matched Features */
       matched_features?: string[];
       /** Mismatched Features */
@@ -606,21 +643,34 @@ export interface components {
       excluded_count: number;
       /**
        * Label
-       * @default Start-to-primary-completion timeline proxy
+       * @default Enrollment-adjusted study timeline proxy
        */
       label: string;
       /** Limitation */
       limitation: string;
+      /** Median Enrollment */
+      median_enrollment?: number | null;
       /** Median Months */
       median_months?: number | null;
+      /** Median Participants Per Month */
+      median_participants_per_month?: number | null;
       /** Percentile */
       percentile?: number | null;
+      /** Projected Enrollment Months */
+      projected_enrollment_months?: number | null;
       /** Q1 Months */
       q1_months?: number | null;
       /** Q3 Months */
       q3_months?: number | null;
+      /** Target Enrollment */
+      target_enrollment: number;
       /** Target Months */
       target_months?: number | null;
+      /**
+       * Throughput Cohort Size
+       * @default 0
+       */
+      throughput_cohort_size: number;
     };
     /** TrialDraft */
     TrialDraft: {
@@ -634,6 +684,11 @@ export interface components {
       enrollment: number;
       /** Enrollment Type */
       enrollment_type?: string | null;
+      /**
+       * Has Results
+       * @default false
+       */
+      has_results: boolean;
       /** Healthy Volunteers */
       healthy_volunteers?: boolean | null;
       /** Indication */
@@ -646,7 +701,7 @@ export interface components {
       minimum_age?: string | null;
       /** Molecule Class */
       molecule_class?: string | null;
-      /** Nct Id — NCT\d{8} for ClinicalTrials.gov imports; MANUAL\d{6} for manually entered protocols */
+      /** Nct Id */
       nct_id: string;
       /** Overall Status */
       overall_status: string;
@@ -658,6 +713,8 @@ export interface components {
       primary_completion_date_type?: string | null;
       /** Primary Endpoints */
       primary_endpoints: components["schemas"]["Endpoint"][];
+      /** Results Primary Endpoints */
+      results_primary_endpoints?: components["schemas"]["Endpoint"][];
       /** Secondary Endpoints */
       secondary_endpoints?: components["schemas"]["Endpoint"][];
       /** Sex */
@@ -1045,6 +1102,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AnalysisRun"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  parse_protocol_text_v1_protocols_parse_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ParseProtocolRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ProtocolParseResult"];
         };
       };
       /** @description Validation Error */

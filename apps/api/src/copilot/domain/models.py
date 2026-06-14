@@ -88,6 +88,8 @@ class TrialDraft(BaseModel):
     study_design: StudyDesign
     primary_endpoints: list[Endpoint] = Field(min_length=1)
     secondary_endpoints: list[Endpoint] = Field(default_factory=list)
+    has_results: bool = False
+    results_primary_endpoints: list[Endpoint] = Field(default_factory=list)
     enrollment: int = Field(ge=1)
     enrollment_type: str | None = None
     start_date: date | None = None
@@ -120,6 +122,17 @@ class TrialSearchResponse(BaseModel):
     total_count: int | None = None
 
 
+class ParseProtocolRequest(BaseModel):
+    text: str = Field(min_length=50, max_length=200_000)
+
+
+class ProtocolParseResult(BaseModel):
+    trial: TrialDraft
+    extracted_fields: list[str]
+    warnings: list[str]
+    parser_version: str
+
+
 class ScoreComponent(BaseModel):
     key: str
     label: str
@@ -141,16 +154,22 @@ class SimilarTrial(BaseModel):
     start_date: date | None = None
     primary_completion_date: date | None = None
     us_site_count: int = 0
+    has_results: bool = False
     matched_features: list[str] = Field(default_factory=list)
     mismatched_features: list[str] = Field(default_factory=list)
     source: SourceReference
 
 
 class TimelineBenchmark(BaseModel):
-    label: str = "Start-to-primary-completion timeline proxy"
+    label: str = "Enrollment-adjusted study timeline proxy"
     median_months: float | None = None
     q1_months: float | None = None
     q3_months: float | None = None
+    median_enrollment: float | None = None
+    median_participants_per_month: float | None = None
+    target_enrollment: int
+    projected_enrollment_months: float | None = None
+    throughput_cohort_size: int = 0
     cohort_size: int = 0
     excluded_count: int = 0
     target_months: float | None = None
@@ -281,7 +300,7 @@ class AnalysisRun(BaseModel):
     analysis_id: UUID
     owner_id: UUID
     status: RunStatus = RunStatus.RUNNING
-    methodology_version: str = "oncology-feasibility-v0.2"
+    methodology_version: str = "oncology-feasibility-v0.3"
     result: FeasibilityResult | None = None
     error_message: str | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

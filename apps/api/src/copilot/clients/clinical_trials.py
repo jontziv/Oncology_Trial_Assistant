@@ -179,6 +179,7 @@ def map_study(payload: dict[str, Any], *, retrieved_at: datetime) -> TrialDraft:
     outcomes = protocol.get("outcomesModule", {})
     contacts = protocol.get("contactsLocationsModule", {})
     description = protocol.get("descriptionModule", {})
+    results = payload.get("resultsSection", {})
 
     nct_id = _required_text(identity, "nctId")
     conditions = _string_list(conditions_module.get("conditions"))
@@ -225,6 +226,16 @@ def map_study(payload: dict[str, Any], *, retrieved_at: datetime) -> TrialDraft:
         .get("miscInfoModule", {})
         .get("versionHolder")
     )
+    result_outcomes = (
+        (results.get("outcomeMeasuresModule") or {}).get("outcomeMeasures") or []
+    )
+    results_primary_endpoints = _map_result_endpoints(
+        [
+            item
+            for item in result_outcomes
+            if str(item.get("type", "")).upper() == "PRIMARY"
+        ]
+    )
     return TrialDraft(
         nct_id=nct_id,
         title=identity.get("officialTitle") or identity.get("briefTitle") or nct_id,
@@ -259,6 +270,8 @@ def map_study(payload: dict[str, Any], *, retrieved_at: datetime) -> TrialDraft:
         ),
         primary_endpoints=primary_endpoints,
         secondary_endpoints=_map_endpoints(outcomes.get("secondaryOutcomes", [])),
+        has_results=bool(payload.get("hasResults")),
+        results_primary_endpoints=results_primary_endpoints,
         enrollment=enrollment,
         enrollment_type=enrollment_info.get("type"),
         start_date=_parse_partial_date((status.get("startDateStruct") or {}).get("date")),
@@ -281,6 +294,7 @@ def map_study(payload: dict[str, Any], *, retrieved_at: datetime) -> TrialDraft:
                 "design": "protocolSection.designModule",
                 "eligibility": "protocolSection.eligibilityModule",
                 "endpoints": "protocolSection.outcomesModule",
+                "results": "resultsSection.outcomeMeasuresModule",
                 "sites": "protocolSection.contactsLocationsModule.locations",
             },
         ),
@@ -317,6 +331,17 @@ def _map_endpoints(items: list[dict[str, Any]]) -> list[Endpoint]:
     return [
         Endpoint(
             measure=item.get("measure") or "Not reported",
+            time_frame=item.get("timeFrame"),
+            description=item.get("description"),
+        )
+        for item in items
+    ]
+
+
+def _map_result_endpoints(items: list[dict[str, Any]]) -> list[Endpoint]:
+    return [
+        Endpoint(
+            measure=item.get("title") or item.get("measure") or "Not reported",
             time_frame=item.get("timeFrame"),
             description=item.get("description"),
         )

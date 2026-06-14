@@ -181,19 +181,92 @@ function ResultSections({
           detail={`${result.eligibility.criterion_count} parsed criteria · ${result.eligibility.band} burden`}
         />
         <MetricCard
-          label="Timeline proxy"
+          label="Enrollment-duration proxy"
           value={
-            result.timeline.median_months
-              ? `${result.timeline.median_months.toFixed(1)} mo`
-              : "Insufficient data"
+            result.timeline.projected_enrollment_months
+              ? `${result.timeline.projected_enrollment_months.toFixed(1)} mo`
+              : result.timeline.median_months
+                ? `${result.timeline.median_months.toFixed(1)} mo`
+                : "Insufficient data"
           }
-          detail={`${result.timeline.cohort_size} usable comparable intervals`}
+          detail={
+            result.timeline.median_participants_per_month
+              ? `${result.timeline.median_participants_per_month.toFixed(1)} participants/month · ${result.timeline.throughput_cohort_size} actual-enrollment comparators`
+              : `${result.timeline.cohort_size} usable comparable intervals`
+          }
         />
         <MetricCard
           label="Endpoint comparability"
           value={`${result.endpoints.score.toFixed(0)}%`}
           detail={`${result.endpoints.comparable_count} of ${result.endpoints.cohort_size} use ${result.endpoints.target_family}`}
         />
+      </section>
+
+      <section className="grid gap-5 lg:grid-cols-3">
+        <div className="rounded-3xl border border-[var(--line)] bg-white p-6 shadow-sm">
+          <h2 className="font-semibold">Eligibility drivers</h2>
+          <div className="mt-4 space-y-3">
+            {result.eligibility.factors.map((factor) => (
+              <div key={factor.label} className="rounded-xl bg-slate-50 p-3">
+                <div className="flex justify-between gap-3 text-sm font-semibold">
+                  <span>{factor.label}</span>
+                  <span>+{factor.points.toFixed(1)}</span>
+                </div>
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  {factor.evidence}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-3xl border border-[var(--line)] bg-white p-6 shadow-sm">
+          <h2 className="font-semibold">Endpoint precedent</h2>
+          <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
+            Registered primary outcomes are used unless a comparable trial has
+            posted result outcomes.
+          </p>
+          <div className="mt-4 space-y-3">
+            {Object.entries(result.endpoints.cohort_distribution).map(
+              ([family, count]) => (
+                <div
+                  key={family}
+                  className="flex items-center justify-between rounded-xl bg-slate-50 p-3 text-sm"
+                >
+                  <span className="capitalize">{family}</span>
+                  <span className="font-semibold">{count}</span>
+                </div>
+              ),
+            )}
+          </div>
+        </div>
+        <div className="rounded-3xl border border-[var(--line)] bg-white p-6 shadow-sm">
+          <h2 className="font-semibold">Enrollment benchmark</h2>
+          <dl className="mt-4 space-y-3 text-sm">
+            <div className="flex justify-between gap-3">
+              <dt className="text-[var(--muted)]">Target enrollment</dt>
+              <dd className="font-semibold">
+                {result.timeline.target_enrollment}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-[var(--muted)]">Comparator median</dt>
+              <dd className="font-semibold">
+                {result.timeline.median_enrollment?.toFixed(0) ?? "Unavailable"}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-[var(--muted)]">Projected proxy</dt>
+              <dd className="font-semibold">
+                {result.timeline.projected_enrollment_months
+                  ? `${result.timeline.projected_enrollment_months.toFixed(1)} months`
+                  : "Unavailable"}
+              </dd>
+            </div>
+          </dl>
+          <p className="mt-5 text-xs leading-5 text-[var(--muted)]">
+            {result.timeline.limitation}
+          </p>
+        </div>
       </section>
 
       <section className="rounded-3xl border border-[var(--line)] bg-white p-7 shadow-sm">
@@ -270,6 +343,9 @@ function ResultSections({
                   <td className="max-w-sm text-xs leading-5 text-[var(--muted)]">
                     {item.candidate_facilities.join(", ") ||
                       "No normalized facility history"}
+                    {item.disease_burden_rate != null
+                      ? ` · incidence ${item.disease_burden_rate.toFixed(1)}/100k`
+                      : ""}
                   </td>
                 </tr>
               ))}
@@ -322,7 +398,30 @@ function ResultSections({
           </ul>
           <p className="mt-6 text-xs text-slate-400">
             Citations:{" "}
-            {result.memo.citation_ids.join(", ") || "No external citations"}
+            {result.memo.citation_ids.length
+              ? result.memo.citation_ids.map((sourceId, index) => {
+                  const source = result.sources.find(
+                    (item) => item.source_id === sourceId,
+                  );
+                  return (
+                    <span key={sourceId}>
+                      {index > 0 ? ", " : ""}
+                      {source && source.url.startsWith("http") ? (
+                        <a
+                          href={source.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline hover:text-white"
+                        >
+                          {sourceId}
+                        </a>
+                      ) : (
+                        sourceId
+                      )}
+                    </span>
+                  );
+                })
+              : "No external citations"}
           </p>
         </div>
       </section>
@@ -365,7 +464,11 @@ function ResultSections({
       {(result.publications ?? []).length > 0 ? (
         <section className="rounded-3xl border border-[var(--line)] bg-white p-7 shadow-sm">
           <h2 className="flex items-center gap-2 text-xl font-semibold">
-            <BookOpen size={20} className="text-[var(--brand)]" aria-hidden="true" />
+            <BookOpen
+              size={20}
+              className="text-[var(--brand)]"
+              aria-hidden="true"
+            />
             Related publications
           </h2>
           <p className="mt-1 text-sm text-[var(--muted)]">
@@ -409,23 +512,36 @@ function ResultSections({
           Evidence sources
         </h2>
         <div className="mt-5 grid gap-3 md:grid-cols-2">
-          {result.sources.map((source) => (
-            <a
-              key={source.source_id}
-              href={source.url}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-xl border border-[var(--line)] p-4 transition hover:border-[var(--brand)]"
-            >
-              <p className="text-[10px] font-bold uppercase text-[var(--brand)]">
-                {source.source_id}
-              </p>
-              <p className="mt-2 text-sm font-semibold">{source.title}</p>
-              <p className="mt-1 text-xs text-[var(--muted)]">
-                {source.locator}
-              </p>
-            </a>
-          ))}
+          {result.sources.map((source) => {
+            const content = (
+              <>
+                <p className="text-[10px] font-bold uppercase text-[var(--brand)]">
+                  {source.source_id}
+                </p>
+                <p className="mt-2 text-sm font-semibold">{source.title}</p>
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  {source.locator}
+                </p>
+              </>
+            );
+            const className =
+              "rounded-xl border border-[var(--line)] p-4 transition hover:border-[var(--brand)]";
+            return source.url.startsWith("http") ? (
+              <a
+                key={source.source_id}
+                href={source.url}
+                target="_blank"
+                rel="noreferrer"
+                className={className}
+              >
+                {content}
+              </a>
+            ) : (
+              <div key={source.source_id} className={className}>
+                {content}
+              </div>
+            );
+          })}
         </div>
       </section>
 

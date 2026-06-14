@@ -16,6 +16,7 @@ export type GeographyRecommendation =
 export type Intervention = components["schemas"]["Intervention"];
 export type ProtocolRecommendation =
   components["schemas"]["ProtocolRecommendation"];
+export type ProtocolParseResult = components["schemas"]["ProtocolParseResult"];
 export type PublicationEvidence = components["schemas"]["PublicationEvidence"];
 export type ScoreComponent = components["schemas"]["ScoreComponent"];
 export type SimilarTrial = components["schemas"]["SimilarTrial"];

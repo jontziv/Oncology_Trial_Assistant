@@ -43,6 +43,7 @@ async def test_service_builds_complete_reproducible_result() -> None:
             "start_date_type": "ACTUAL",
             "primary_completion_date": date(2024, 1, 1),
             "primary_completion_date_type": "ACTUAL",
+            "enrollment_type": "ACTUAL",
         },
         deep=True,
     )
@@ -60,7 +61,7 @@ async def test_service_builds_complete_reproducible_result() -> None:
         )
     )
 
-    assert result.methodology_version == "oncology-feasibility-v0.2"
+    assert result.methodology_version == "oncology-feasibility-v0.3"
     assert len(result.components) == 5
     assert result.similar_trials[0].nct_id == "NCT11111111"
     assert result.memo.generated_by == "Deterministic template"

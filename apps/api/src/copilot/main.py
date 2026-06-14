@@ -7,6 +7,7 @@ from copilot.api.errors import (
     upstream_unavailable_handler,
 )
 from copilot.api.health import router as health_router
+from copilot.api.protocols import router as protocols_router
 from copilot.api.trials import router as trials_router
 from copilot.clients.clinical_trials import TrialNotFoundError, UpstreamUnavailableError
 from copilot.config import get_settings
@@ -37,6 +38,7 @@ app.add_middleware(
 )
 app.include_router(health_router)
 app.include_router(trials_router)
+app.include_router(protocols_router)
 app.include_router(analyses_router)
 app.add_exception_handler(TrialNotFoundError, trial_not_found_handler)
 app.add_exception_handler(UpstreamUnavailableError, upstream_unavailable_handler)

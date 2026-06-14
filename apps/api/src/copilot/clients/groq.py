@@ -42,6 +42,16 @@ class GroqMemoClient:
             "eligibility": result.eligibility.model_dump(mode="json"),
             "competition": result.competition.model_dump(mode="json"),
             "endpoints": result.endpoints.model_dump(mode="json"),
+            "geography": [
+                item.model_dump(mode="json") for item in result.geography[:12]
+            ],
+            "similar_trials": [
+                item.model_dump(mode="json") for item in result.similar_trials[:12]
+            ],
+            "publications": [
+                item.model_dump(mode="json") for item in result.publications
+            ],
+            "sources": [item.model_dump(mode="json") for item in result.sources],
             "recommendations": [
                 item.model_dump(mode="json") for item in result.recommendations
             ],

@@ -7,6 +7,7 @@ from copilot.services.methodology import (
     competition_analysis,
     eligibility_burden,
     endpoint_comparability,
+    geography_recommendations,
     risk_band,
     score_components,
     select_similar_trials,
@@ -34,6 +35,7 @@ def test_similarity_and_benchmarks_are_explainable() -> None:
             "start_date_type": "ACTUAL",
             "primary_completion_date": date(2024, 1, 1),
             "primary_completion_date_type": "ACTUAL",
+            "enrollment_type": "ACTUAL",
         },
         deep=True,
     )
@@ -52,6 +54,9 @@ def test_similarity_and_benchmarks_are_explainable() -> None:
     assert "phase" in similar[0].matched_features
     assert timeline.cohort_size == 1
     assert 23 < (timeline.median_months or 0) < 25
+    assert timeline.median_enrollment == 80
+    assert 3 < (timeline.median_participants_per_month or 0) < 4
+    assert 23 < (timeline.projected_enrollment_months or 0) < 25
     assert competition.active_trial_count == 1
     assert endpoints.comparable_count == 2
 
@@ -79,9 +84,29 @@ def test_overall_score_exposes_weighted_components_and_sensitivity() -> None:
     assert risk_band(overall).value in {"low", "moderate", "high"}
 
 
-def test_uscs_boundary_does_not_invent_state_rates() -> None:
-    burden = load_disease_burden()
+def test_uscs_reference_data_is_indication_specific() -> None:
+    burden = load_disease_burden("metastatic non-small cell lung cancer")
 
-    assert burden.dataset == "U.S. Cancer Statistics Public Use Database"
-    assert burden.rates_per_100k == {}
-    assert "SEER*Stat" in burden.limitation
+    assert burden.dataset == "NCI/CDC State Cancer Profiles (NPCR + SEER)"
+    assert burden.cancer_site == "Lung & Bronchus"
+    assert len(burden.rates_per_100k) >= 50
+    assert burden.rates_per_100k["Kentucky"] == 83.7
+
+    unmatched = load_disease_burden("multiple myeloma")
+    assert unmatched.rates_per_100k == {}
+    assert "omitted" in unmatched.limitation
+
+
+def test_requested_non_us_country_is_ranked_without_history() -> None:
+    target = _trial().model_copy(
+        update={"target_geographies": ["Germany"], "sites": []},
+        deep=True,
+    )
+    burden = load_disease_burden(target.indication)
+    competition = competition_analysis(target, [])
+
+    geography = geography_recommendations(target, [], competition, burden)
+
+    assert [item.region for item in geography] == ["Germany"]
+    assert geography[0].level == "country"
+    assert geography[0].historical_trial_count == 0

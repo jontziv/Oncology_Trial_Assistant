@@ -92,7 +92,7 @@
             "type": "string"
           },
           "methodology_version": {
-            "default": "oncology-feasibility-v0.2",
+            "default": "oncology-feasibility-v0.3",
             "title": "Methodology Version",
             "type": "string"
           },
@@ -716,6 +716,47 @@
         "title": "Intervention",
         "type": "object"
       },
+      "ParseProtocolRequest": {
+        "properties": {
+          "text": {
+            "maxLength": 200000,
+            "minLength": 50,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": ["text"],
+        "title": "ParseProtocolRequest",
+        "type": "object"
+      },
+      "ProtocolParseResult": {
+        "properties": {
+          "extracted_fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Extracted Fields",
+            "type": "array"
+          },
+          "parser_version": {
+            "title": "Parser Version",
+            "type": "string"
+          },
+          "trial": {
+            "$ref": "#/components/schemas/TrialDraft"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": ["trial", "extracted_fields", "warnings", "parser_version"],
+        "title": "ProtocolParseResult",
+        "type": "object"
+      },
       "ProtocolRecommendation": {
         "properties": {
           "category": {
@@ -909,6 +950,11 @@
           "enrollment": {
             "title": "Enrollment",
             "type": "integer"
+          },
+          "has_results": {
+            "default": false,
+            "title": "Has Results",
+            "type": "boolean"
           },
           "matched_features": {
             "items": {
@@ -1192,13 +1238,24 @@
             "type": "integer"
           },
           "label": {
-            "default": "Start-to-primary-completion timeline proxy",
+            "default": "Enrollment-adjusted study timeline proxy",
             "title": "Label",
             "type": "string"
           },
           "limitation": {
             "title": "Limitation",
             "type": "string"
+          },
+          "median_enrollment": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Enrollment"
           },
           "median_months": {
             "anyOf": [
@@ -1211,6 +1268,17 @@
             ],
             "title": "Median Months"
           },
+          "median_participants_per_month": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Participants Per Month"
+          },
           "percentile": {
             "anyOf": [
               {
@@ -1221,6 +1289,17 @@
               }
             ],
             "title": "Percentile"
+          },
+          "projected_enrollment_months": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projected Enrollment Months"
           },
           "q1_months": {
             "anyOf": [
@@ -1244,6 +1323,10 @@
             ],
             "title": "Q3 Months"
           },
+          "target_enrollment": {
+            "title": "Target Enrollment",
+            "type": "integer"
+          },
           "target_months": {
             "anyOf": [
               {
@@ -1254,9 +1337,14 @@
               }
             ],
             "title": "Target Months"
+          },
+          "throughput_cohort_size": {
+            "default": 0,
+            "title": "Throughput Cohort Size",
+            "type": "integer"
           }
         },
-        "required": ["confidence", "limitation"],
+        "required": ["target_enrollment", "confidence", "limitation"],
         "title": "TimelineBenchmark",
         "type": "object"
       },
@@ -1301,6 +1389,11 @@
               }
             ],
             "title": "Enrollment Type"
+          },
+          "has_results": {
+            "default": false,
+            "title": "Has Results",
+            "type": "boolean"
           },
           "healthy_volunteers": {
             "anyOf": [
@@ -1360,7 +1453,7 @@
             "title": "Molecule Class"
           },
           "nct_id": {
-            "pattern": "^NCT\\d{8}$",
+            "pattern": "^(NCT\\d{8}|MANUAL\\d{6})$",
             "title": "Nct Id",
             "type": "string"
           },
@@ -1405,6 +1498,13 @@
             },
             "minItems": 1,
             "title": "Primary Endpoints",
+            "type": "array"
+          },
+          "results_primary_endpoints": {
+            "items": {
+              "$ref": "#/components/schemas/Endpoint"
+            },
+            "title": "Results Primary Endpoints",
             "type": "array"
           },
           "secondary_endpoints": {
@@ -2305,6 +2405,45 @@
         },
         "summary": "Get Latest Run",
         "tags": ["analyses"]
+      }
+    },
+    "/v1/protocols/parse": {
+      "post": {
+        "operationId": "parse_protocol_text_v1_protocols_parse_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParseProtocolRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolParseResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Parse Protocol Text",
+        "tags": ["protocols"]
       }
     },
     "/v1/trials": {

@@ -62,6 +62,8 @@ export function createBlankTrialDraft(params: {
       },
     ],
     secondary_endpoints: [],
+    has_results: false,
+    results_primary_endpoints: [],
     enrollment: 100,
     enrollment_type: "ESTIMATED",
     start_date: null,

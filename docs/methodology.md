@@ -1,4 +1,4 @@
-# Illustrative Feasibility Methodology v0.2
+# Illustrative Feasibility Methodology v0.3
 
 This methodology is decision support, not a trained or validated enrollment
 prediction.
@@ -20,12 +20,15 @@ with weighted structured and lexical features:
 
 The dashboard displays matched and mismatched features for each selected study.
 
-## Timeline
+## Enrollment Duration
 
 The benchmark uses only records with actual study-start and actual
 primary-completion dates between 30 days and 10 years. It reports median and
-interquartile range. This interval includes treatment and follow-up and is
-therefore labeled a timeline proxy, never recruitment duration.
+interquartile range. When actual enrollment is also available, enrollment
+divided by that interval produces a participants-per-month proxy and a
+target-enrollment projection. The interval includes treatment and follow-up,
+so this is a conservative planning benchmark, not observed recruitment
+duration.
 
 ## Eligibility
 
@@ -41,15 +44,24 @@ weights. US state opportunity combines historical comparable-trial footprint
 and inverse active competition. Country opportunity uses the same public site
 signals without a disease-burden adjustment.
 
-USCS is a versioned reference-data boundary. State incidence rates remain
-empty until an approved SEER\*Stat export is imported; confidence is reduced in
-the meantime.
+US state opportunity also uses indication-matched, age-adjusted 2018–2022
+incidence rates from NCI/CDC State Cancer Profiles. The bundled importer
+retrieves NPCR and SEER tables for 19 cancer sites. Incidence is context only;
+it is not prevalence, referral volume, or a trial-eligible-patient estimate.
+Unknown indications omit this factor rather than borrowing another cancer
+site's rate.
+
+## Endpoints
+
+Primary endpoints are normalized into common oncology families. For trials
+with posted ClinicalTrials.gov results, the posted primary result outcome is
+preferred; otherwise the registered primary outcome is used.
 
 ## Overall Risk
 
 - eligibility 25%
 - active competition 25%
-- timeline proxy 20%
+- enrollment-duration benchmark 20%
 - geographic opportunity inverse 20%
 - endpoint mismatch 10%
 
@@ -60,6 +72,8 @@ sensitivity interval.
 ## Memo
 
 The deterministic memo is always available. Groq generation is enabled only
-when `GROQ_MODEL` names an account-verified production Llama model. Generated
-JSON is schema-validated; unknown citations and unsupported numbers cause
-fallback to the deterministic memo.
+when `GROQ_MODEL` names an account-verified production Llama model. Its
+evidence packet includes computed metrics, comparable trials, geography,
+publications, recommendations, and source metadata. Generated JSON is
+schema-validated; unknown citations and unsupported numbers cause fallback to
+the deterministic memo.

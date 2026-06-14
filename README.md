@@ -11,16 +11,21 @@ Portfolio-grade decision support for exploring public clinical-trial evidence.
 The current implementation includes:
 
 - Search ClinicalTrials.gov and import a study by NCT ID.
+- Parse pasted protocol text into an editable draft with extraction warnings.
+- Enter indication, molecule class, biomarker, geography, phase, endpoints, and
+  inclusion/exclusion criteria manually.
 - Review normalized source fields in an editable analysis form.
 - Save, reopen, update, and delete analyses.
 - Preserve source provenance and distinguish imported values from user edits.
 - Enforce per-user access with Supabase Row Level Security.
 - Run a versioned, deterministic feasibility analysis.
 - Rank a transparent comparable-trial cohort.
-- Compute eligibility burden, active competition, timeline proxy, endpoint
+- Compute eligibility burden, active competition, enrollment-duration proxy, endpoint
   comparability, state/country opportunity, overall risk, confidence, and
   sensitivity.
 - Retrieve related PubMed records through NCBI E-utilities.
+- Use indication-matched NCI/CDC State Cancer Profiles incidence context for
+  US state recommendations.
 - Generate evidence-linked protocol recommendations and a deterministic memo.
 - Use Groq only when a production Llama model has been explicitly verified and
   configured; otherwise show the deterministic memo.
@@ -67,12 +72,16 @@ uv run --project apps/api pytest apps/api
 ## Data Sources
 
 - [ClinicalTrials.gov API v2](https://clinicaltrials.gov/data-api/api)
+- [PubMed NCBI E-utilities](https://www.ncbi.nlm.nih.gov/books/NBK25501/)
+- [NCI/CDC State Cancer Profiles](https://statecancerprofiles.cancer.gov/incidencerates/)
 - [Supabase](https://supabase.com/docs)
 
 ClinicalTrials.gov records are sponsor-submitted and can be incomplete or out
 of date. The application records retrieval time and source locators so users
 can inspect where imported values originated.
 
-USCS state disease-burden values are intentionally not bundled until a reviewed
-SEER\*Stat export is supplied. The results screen identifies that missing input
-and reduces geography confidence rather than inventing rates.
+The versioned reference bundle contains 2018–2022 age-adjusted state incidence
+rates for 19 cancer sites from the official NPCR/SEER-backed State Cancer
+Profiles export. Run
+`apps/api/scripts/import_state_cancer_profiles.py` to refresh it. Incidence is
+used as disease-burden context, not as an estimate of trial-eligible patients.

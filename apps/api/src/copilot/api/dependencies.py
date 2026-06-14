@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Annotated
+from typing import Annotated, cast
 from uuid import UUID
 
 import httpx
@@ -75,7 +75,7 @@ def get_trials_client(
 ) -> ClinicalTrialsClient:
     override = getattr(request.app.state, "clinical_trials_client", None)
     if override is not None:
-        return override
+        return cast(ClinicalTrialsClient, override)
     return ClinicalTrialsClient(
         str(settings.clinical_trials_base_url),
         fallback_base_url=(
@@ -94,7 +94,7 @@ def get_feasibility_service(
 ) -> FeasibilityService:
     override = getattr(request.app.state, "feasibility_service", None)
     if override is not None:
-        return override
+        return cast(FeasibilityService, override)
     trials = get_trials_client(request, settings)
     pubmed = PubMedClient(
         str(settings.ncbi_base_url),

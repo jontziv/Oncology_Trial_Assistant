@@ -2,6 +2,7 @@ import type {
   Analysis,
   AnalysisRun,
   FeasibilityResult,
+  ProtocolParseResult,
   TrialDraft,
   TrialSearchResponse,
 } from "@oncology/api-client";
@@ -75,6 +76,11 @@ export const api = {
       `/v1/trials?query=${encodeURIComponent(query)}`,
     ),
   getTrial: (nctId: string) => request<TrialDraft>(`/v1/trials/${nctId}`),
+  parseProtocol: (text: string) =>
+    request<ProtocolParseResult>("/v1/protocols/parse", {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    }),
   listAnalyses: () => request<Analysis[]>("/v1/analyses"),
   getAnalysis: (id: string) => request<Analysis>(`/v1/analyses/${id}`),
   createAnalysis: (payload: { title?: string; trial: TrialDraft }) =>

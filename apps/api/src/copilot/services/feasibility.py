@@ -60,18 +60,27 @@ class FeasibilityService:
         eligibility = eligibility_burden(target)
         timeline = timeline_benchmark(target, cohort)
         competition = competition_analysis(target, cohort)
-        burden = load_disease_burden()
+        burden = load_disease_burden(target.indication)
         geography = geography_recommendations(target, cohort, competition, burden)
         endpoints = endpoint_comparability(target, cohort)
 
+        target_is_registered = target.nct_id.startswith("NCT")
         target_source = EvidenceSource(
-            source_id=f"CTGOV:{target.nct_id}",
-            source_type="target_trial",
+            source_id=(
+                f"CTGOV:{target.nct_id}"
+                if target_is_registered
+                else f"PROTOCOL:{target.nct_id}"
+            ),
+            source_type="target_trial" if target_is_registered else "target_protocol",
             title=target.title,
             url=target.source.url,
             record_id=target.nct_id,
             retrieved_at=target.source.retrieved_at,
-            locator="ClinicalTrials.gov target protocol record",
+            locator=(
+                "ClinicalTrials.gov target protocol record"
+                if target_is_registered
+                else "User-provided protocol text"
+            ),
         )
         trial_sources = [
             EvidenceSource(
@@ -81,7 +90,11 @@ class FeasibilityService:
                 url=item.source.url,
                 record_id=item.nct_id,
                 retrieved_at=item.source.retrieved_at,
-                locator="ClinicalTrials.gov protocol record",
+                locator=(
+                    "ClinicalTrials.gov protocol and posted results record"
+                    if item.has_results
+                    else "ClinicalTrials.gov protocol record"
+                ),
             )
             for item in similar
         ]
@@ -94,7 +107,14 @@ class FeasibilityService:
             retrieved_at=datetime.now(UTC),
             locator=burden.cancer_site,
         )
-        if not burden.rates_per_100k:
+        targets_us = any(
+            country.casefold() == "united states"
+            for country in target.target_geographies
+        )
+        burden_sources = (
+            [burden_source] if burden.rates_per_100k and targets_us else []
+        )
+        if not burden.rates_per_100k and targets_us:
             warnings.append(burden.limitation)
 
         publications: list[PublicationEvidence] = []
@@ -109,7 +129,10 @@ class FeasibilityService:
                 "PubMed was unavailable; the result uses trial records only."
             )
 
-        recommendation_sources = [source.source_id for source in trial_sources]
+        recommendation_sources = [
+            target_source.source_id,
+            *(source.source_id for source in trial_sources),
+        ]
         recommendations = protocol_recommendations(
             target,
             eligibility,
@@ -128,7 +151,12 @@ class FeasibilityService:
                 endpoints,
             )
         )
-        sources = [target_source, *trial_sources, *publication_sources, burden_source]
+        sources = [
+            target_source,
+            *trial_sources,
+            *publication_sources,
+            *burden_sources,
+        ]
         fallback = _deterministic_memo(
             overall=overall,
             band=risk_band(overall).value,
@@ -178,15 +206,9 @@ class FeasibilityService:
 
 
 def _trial_search_query(target: TrialDraft) -> str:
-    # Include the primary biomarker alongside the indication to improve
-    # candidate quality while keeping retrieval broad enough to surface
-    # different therapeutic approaches for comparison.
-    parts = [target.indication]
-    if target.biomarker:
-        primary = target.biomarker.split(",")[0].strip()
-        if primary:
-            parts.append(primary)
-    return " ".join(parts)
+    # Retrieve broadly by indication, then apply biomarker, phase, design,
+    # intervention, endpoint, geography, and eligibility similarity locally.
+    return target.indication
 
 
 def _publication_query(target: TrialDraft) -> str:
@@ -239,7 +261,8 @@ def _deterministic_memo(
         recommendations=[item.recommendation for item in recommendations[:5]],
         limitations=[
             "ClinicalTrials.gov does not report reliable site-level accrual.",
-            "Study start to primary completion is not recruitment duration.",
+            "Enrollment throughput uses start to primary completion, not observed "
+            "recruitment duration.",
             *warnings[:3],
         ],
         citation_ids=source_ids[:12],

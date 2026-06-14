@@ -19,7 +19,7 @@ from copilot.domain.models import (
 )
 from copilot.services.reference_data import DiseaseBurdenDataset
 
-METHODOLOGY_VERSION = "oncology-feasibility-v0.2"
+METHODOLOGY_VERSION = "oncology-feasibility-v0.3"
 ACTIVE_STATUSES = {"RECRUITING", "NOT_YET_RECRUITING", "ENROLLING_BY_INVITATION"}
 STATUS_WEIGHTS = {
     "RECRUITING": 1.0,
@@ -72,6 +72,7 @@ def select_similar_trials(
                 us_site_count=sum(
                     site.country == "United States" for site in candidate.sites
                 ),
+                has_results=candidate.has_results,
                 matched_features=matches,
                 mismatched_features=mismatches,
                 source=candidate.source,
@@ -186,6 +187,8 @@ def timeline_benchmark(
     cohort: list[TrialDraft],
 ) -> TimelineBenchmark:
     durations: list[float] = []
+    enrollments: list[int] = []
+    throughput: list[float] = []
     excluded = 0
     for trial in cohort:
         if (
@@ -201,7 +204,11 @@ def timeline_benchmark(
         if days < 30 or days > 3652:
             excluded += 1
             continue
-        durations.append(days / 30.4375)
+        duration = days / 30.4375
+        durations.append(duration)
+        if trial.enrollment_type == "ACTUAL":
+            enrollments.append(trial.enrollment)
+            throughput.append(trial.enrollment / duration)
     durations.sort()
     target_months = None
     if (
@@ -215,13 +222,14 @@ def timeline_benchmark(
             target_months = days / 30.4375
     if not durations:
         return TimelineBenchmark(
+            target_enrollment=target.enrollment,
             cohort_size=0,
             excluded_count=excluded,
             target_months=_rounded(target_months),
             confidence=0.15,
             limitation=(
                 "No usable actual start-to-primary-completion intervals were "
-                "available. This metric is not recruitment duration."
+                "available. ClinicalTrials.gov does not report recruitment duration."
             ),
         )
     q1 = _percentile(durations, 25)
@@ -231,18 +239,26 @@ def timeline_benchmark(
         percentile = 100 * sum(value <= target_months for value in durations) / len(
             durations
         )
+    median_rate = median(throughput) if throughput else None
+    projected_months = target.enrollment / median_rate if median_rate else None
     return TimelineBenchmark(
         median_months=round(median(durations), 1),
         q1_months=round(q1, 1),
         q3_months=round(q3, 1),
+        median_enrollment=_rounded(median(enrollments) if enrollments else None),
+        median_participants_per_month=_rounded(median_rate),
+        target_enrollment=target.enrollment,
+        projected_enrollment_months=_rounded(projected_months),
+        throughput_cohort_size=len(throughput),
         cohort_size=len(durations),
         excluded_count=excluded,
         target_months=_rounded(target_months),
         percentile=_rounded(percentile),
         confidence=min(0.9, 0.35 + len(durations) / 30),
         limitation=(
-            "Primary completion includes treatment and follow-up; it is a study "
-            "timeline proxy, not observed recruitment duration."
+            "Participants per month divides actual enrollment by start-to-primary-"
+            "completion time. Follow-up is included, so this is a conservative "
+            "enrollment-planning proxy, not observed recruitment duration."
         ),
     )
 
@@ -306,6 +322,7 @@ def geography_recommendations(
     country_facilities: dict[str, Counter[str]] = defaultdict(Counter)
     country_active_sites: Counter[str] = Counter()
     target_countries = {country.casefold() for country in target.target_geographies}
+    include_us_states = "united states" in target_countries
     for trial in cohort:
         for site in trial.sites:
             country_history[site.country].add(trial.nct_id)
@@ -313,7 +330,7 @@ def geography_recommendations(
                 country_facilities[site.country][site.facility] += 1
             if trial.overall_status in ACTIVE_STATUSES:
                 country_active_sites[site.country] += 1
-            if site.country == "United States" and site.state:
+            if include_us_states and site.country == "United States" and site.state:
                 history[site.state].add(trial.nct_id)
                 if site.facility:
                     facilities[site.state][site.facility] += 1
@@ -366,7 +383,9 @@ def geography_recommendations(
     )
     max_country_competition = max(1, max(country_active_sites.values(), default=0))
     country_recommendations: list[GeographyRecommendation] = []
-    for country, trials in country_history.items():
+    country_names = set(country_history) | set(target.target_geographies)
+    for country in country_names:
+        trials = country_history[country]
         is_target = country.casefold() in target_countries
         opportunity = min(
             100,
@@ -416,7 +435,12 @@ def endpoint_comparability(
     distribution: Counter[str] = Counter()
     comparable = 0
     for trial in cohort:
-        family = _endpoint_family(trial.primary_endpoints[0].measure)
+        endpoint = (
+            trial.results_primary_endpoints[0]
+            if trial.has_results and trial.results_primary_endpoints
+            else trial.primary_endpoints[0]
+        )
+        family = _endpoint_family(endpoint.measure)
         distribution[family] += 1
         comparable += family == target_family
     score = 50.0 if not cohort else 100 * comparable / len(cohort)
@@ -443,11 +467,30 @@ def score_components(
     endpoints: EndpointComparability,
 ) -> tuple[list[ScoreComponent], float, float, float, float]:
     timeline_score = 50.0
-    if timeline.target_months and timeline.median_months:
+    if timeline.projected_enrollment_months and timeline.median_months:
+        timeline_score = min(
+            100.0,
+            50 * timeline.projected_enrollment_months / timeline.median_months,
+        )
+    elif timeline.target_months and timeline.median_months:
         timeline_score = min(100.0, 50 * timeline.target_months / timeline.median_months)
-    state_geography = [item for item in geography if item.level == "state"]
+    target_countries = {country.casefold() for country in target.target_geographies}
+    if "united states" in target_countries:
+        relevant_geography = [item for item in geography if item.level == "state"]
+    else:
+        relevant_geography = [
+            item
+            for item in geography
+            if item.level == "country" and item.region.casefold() in target_countries
+        ]
+        if not relevant_geography:
+            relevant_geography = [
+                item for item in geography if item.level == "country"
+            ]
     geography_score = (
-        100 - state_geography[0].opportunity_score if state_geography else 60.0
+        100 - relevant_geography[0].opportunity_score
+        if relevant_geography
+        else 60.0
     )
     endpoint_risk = 100 - endpoints.score
     values = [
@@ -469,7 +512,7 @@ def score_components(
         ),
         (
             "timeline",
-            "Study timeline proxy",
+            "Enrollment-duration benchmark",
             timeline_score,
             0.20,
             timeline.confidence,
@@ -480,11 +523,12 @@ def score_components(
             "Geographic opportunity",
             geography_score,
             0.20,
-            state_geography[0].confidence if state_geography else 0.25,
+            relevant_geography[0].confidence if relevant_geography else 0.25,
             (
-                f"Best observed state opportunity is {state_geography[0].region}."
-                if state_geography
-                else "No usable US site geography was found."
+                f"Best relevant geographic opportunity is "
+                f"{relevant_geography[0].region}."
+                if relevant_geography
+                else "No usable site geography was found."
             ),
         ),
         (
@@ -599,15 +643,21 @@ def protocol_recommendations(
                 evidence_ids=evidence,
             )
         )
-    state_geography = [item for item in geography if item.level == "state"]
-    if state_geography:
+    target_countries = {country.casefold() for country in target.target_geographies}
+    preferred_level = (
+        "state" if "united states" in target_countries else "country"
+    )
+    preferred_geography = [
+        item for item in geography if item.level == preferred_level
+    ]
+    if preferred_geography:
         recommendations.append(
             ProtocolRecommendation(
                 priority="medium",
                 category="geography",
                 recommendation=(
                     "Validate candidate facilities in "
-                    + ", ".join(item.region for item in state_geography[:3])
+                    + ", ".join(item.region for item in preferred_geography[:3])
                     + " using current capacity and startup intelligence before selection."
                 ),
                 expected_benefit="Focuses manual feasibility on data-supported candidates.",
