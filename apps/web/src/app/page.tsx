@@ -34,10 +34,10 @@ export default function Home() {
           </div>
         </div>
         <Link
-          href="/analyses"
+          href="/sign-in"
           className="rounded-full border border-[var(--line)] bg-white px-5 py-2.5 text-sm font-semibold shadow-sm transition hover:border-[var(--brand)]"
         >
-          Open workspace
+          Sign in
         </Link>
       </header>
 

@@ -29,7 +29,7 @@ export function AppShell({
     <div className="min-h-screen">
       <header className="border-b border-[var(--line)] bg-white/85 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
-          <Link href="/analyses" className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
             <span className="grid size-9 place-items-center rounded-xl bg-[var(--brand)] text-white">
               <Beaker size={18} aria-hidden="true" />
             </span>

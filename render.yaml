@@ -14,7 +14,7 @@ services:
       - key: AUTH_DISABLED
         value: "false"
       - key: DEMO_ACCESS_ENABLED
-        value: "true"
+        value: "false"
       - key: DEMO_USER_ID
         value: 00000000-0000-0000-0000-000000000001
       - key: APP_CORS_ORIGINS
