@@ -14,7 +14,8 @@
     },
     "@oncology/api-client#build": {
       "dependsOn": ["^build"],
-      "outputs": []
+      "outputs": [],
+      "env": ["API_SERVER_URL"]
     },
     "dev": {
       "cache": false,
