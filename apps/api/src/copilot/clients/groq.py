@@ -1,5 +1,6 @@
 import json
 import re
+from asyncio import sleep
 from collections.abc import Mapping
 
 import httpx
@@ -20,6 +21,7 @@ class GroqMemoClient:
         self._api_key = api_key
         self._models = [value for value in (model, fallback_model) if value]
         self._timeout = timeout_seconds
+        self._max_attempts = 3
 
     @property
     def configured(self) -> bool:
@@ -100,51 +102,72 @@ class GroqMemoClient:
             "supported by an allowed source ID. Do not call this a validated prediction.\n"
             + json.dumps(evidence_packet, separators=(",", ":"))
         )
-        try:
-            async with httpx.AsyncClient(timeout=self._timeout) as client:
-                response = await client.post(
-                    "https://api.groq.com/openai/v1/chat/completions",
-                    headers={
-                        "authorization": f"Bearer {self._api_key}",
-                        "content-type": "application/json",
-                    },
-                    json={
-                        "model": model,
-                        "temperature": 0,
-                        "response_format": {"type": "json_object"},
-                        "messages": [
-                            {
-                                "role": "system",
-                                "content": (
-                                    "Output one valid JSON object only. Never invent "
-                                    "sources, statistics, trial facts, or scores."
-                                ),
-                            },
-                            {"role": "user", "content": prompt},
-                        ],
-                    },
-                )
-            response.raise_for_status()
-            content = response.json()["choices"][0]["message"]["content"]
-            parsed = json.loads(content)
-            parsed["generated_by"] = f"Groq {model}"
-            return FeasibilityMemo.model_validate(parsed), None
-        except httpx.HTTPStatusError as exc:
-            status_code = exc.response.status_code
-            return None, f"{model}: upstream HTTP {status_code}"
-        except httpx.HTTPError:
-            return None, f"{model}: network or transport error"
-        except KeyError:
-            return None, f"{model}: unexpected response shape"
-        except IndexError:
-            return None, f"{model}: unexpected response shape"
-        except TypeError:
-            return None, f"{model}: invalid response type"
-        except json.JSONDecodeError:
-            return None, f"{model}: response was not valid JSON"
-        except ValidationError:
-            return None, f"{model}: response failed schema validation"
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            for attempt in range(1, self._max_attempts + 1):
+                try:
+                    response = await client.post(
+                        "https://api.groq.com/openai/v1/chat/completions",
+                        headers={
+                            "authorization": f"Bearer {self._api_key}",
+                            "content-type": "application/json",
+                        },
+                        json={
+                            "model": model,
+                            "temperature": 0,
+                            "response_format": {"type": "json_object"},
+                            "messages": [
+                                {
+                                    "role": "system",
+                                    "content": (
+                                        "Output one valid JSON object only. Never invent "
+                                        "sources, statistics, trial facts, or scores."
+                                    ),
+                                },
+                                {"role": "user", "content": prompt},
+                            ],
+                        },
+                    )
+                    response.raise_for_status()
+                    content = response.json()["choices"][0]["message"]["content"]
+                    parsed = json.loads(content)
+                    parsed["generated_by"] = f"Groq {model}"
+                    return FeasibilityMemo.model_validate(parsed), None
+                except httpx.HTTPStatusError as exc:
+                    status_code = exc.response.status_code
+                    if status_code == 429 and attempt < self._max_attempts:
+                        retry_after = _retry_after_seconds(exc.response.headers)
+                        await sleep(retry_after)
+                        continue
+                    if status_code == 429:
+                        return (
+                            None,
+                            f"{model}: upstream HTTP 429 after {self._max_attempts} attempts",
+                        )
+                    return None, f"{model}: upstream HTTP {status_code}"
+                except httpx.HTTPError:
+                    return None, f"{model}: network or transport error"
+                except KeyError:
+                    return None, f"{model}: unexpected response shape"
+                except IndexError:
+                    return None, f"{model}: unexpected response shape"
+                except TypeError:
+                    return None, f"{model}: invalid response type"
+                except json.JSONDecodeError:
+                    return None, f"{model}: response was not valid JSON"
+                except ValidationError:
+                    return None, f"{model}: response failed schema validation"
+        return None, f"{model}: request attempts exhausted"
 
 
 def _numbers(value: str) -> set[str]:
     return set(re.findall(r"(?<![A-Za-z])\d+(?:\.\d+)?%?", value))
+
+
+def _retry_after_seconds(headers: httpx.Headers) -> float:
+    raw = headers.get("retry-after")
+    if not raw:
+        return 1.5
+    try:
+        return max(0.5, min(10.0, float(raw)))
+    except ValueError:
+        return 1.5
