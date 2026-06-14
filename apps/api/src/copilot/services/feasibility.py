@@ -187,15 +187,19 @@ class FeasibilityService:
             sensitivity_low=sensitivity_low,
             sensitivity_high=sensitivity_high,
         )
-        generated = await self._memo_client.generate(
+        generated, groq_failure_reason = await self._memo_client.generate(
             result,
             allowed_source_ids={source.source_id for source in sources},
         )
         if generated is not None:
             result.memo = generated
         elif self._memo_client.configured:
+            suffix = (
+                f" ({groq_failure_reason})" if groq_failure_reason else ""
+            )
             result.warnings.append(
-                "Groq memo generation failed validation; deterministic memo shown."
+                "Groq memo generation failed validation"
+                f"{suffix}; deterministic memo shown."
             )
         else:
             result.warnings.append(
